@@ -1,0 +1,149 @@
+# Design System
+
+## Design Philosophy
+Pixel Guard is designed around **Google Material You (Material 3)** with a deep security and privacy aesthetic. The interface feels native to Google Pixel devices: tactile, ambient, and modern, using dynamic wallpaper extraction, fluid spring physics, glassmorphic elements, and rich haptic micro-interactions.
+
+## Visual Direction
+- **Ambient Darkness**: Deep charcoal tones (`#101418`, `#1B2025`) provide contrast for vibrant brand and dynamic system accents.
+- **Dynamic Theming**: Adapts to the user's Android wallpaper palette (`dynamicDarkColorScheme`), supplemented by app-specific brand palettes (e.g. emerald for WhatsApp, ruby for YouTube).
+- **Tactile Depth**: Subtle borders (`1dp outlineVariant`), high corner radiuses (`16dp`–`24dp`), and glassmorphism without heavy drop shadows.
+
+## Colors
+Defined in [`Color.kt`](file:///a:/Development/app-lock/app/src/main/java/com/pixelguard/applock/ui/theme/Color.kt) and dynamic Material 3 tokens:
+
+| Token | Hex | Role |
+| :--- | :--- | :--- |
+| `PixelOledBlack` | `#000000` | True OLED black background for lock overlay |
+| `PixelPrimaryDark` | `#A8C7FA` | Primary brand accent & active states |
+| `PixelOnPrimaryDark` | `#062E6F` | High-contrast text on primary |
+| `PixelPrimaryContainerDark` | `#1B448C` | Selected card & button backgrounds |
+| `PixelSecondaryDark` | `#BCC7DB` | Secondary labels & subtle highlights |
+| `PixelBackgroundDark` | `#101418` | Scaffold & screen root background |
+| `PixelSurfaceDark` | `#1B2025` | Container surfaces & elevated cards |
+| `PixelSurfaceVariantDark` | `#282F37` | Keypad discs, input boxes, list items |
+| `PixelSurfaceContainerLowest` | `#0B0E12` | Deepest inset containers |
+| `PixelSurfaceContainerLow` | `#14181E` | Low inset groupings |
+| `PixelSurfaceContainer` | `#1A2026` | Standard M3 card background |
+| `PixelSurfaceContainerHigh` | `#222830` | Elevated list elements & icon discs |
+| `PixelSurfaceContainerHighest` | `#2C333D` | Highest contrast containers |
+| `PixelOutlineDark` | `#8B919A` | Subtle dividers & unfilled state borders |
+| `PixelOutlineVariantDark` | `#3F4750` | Inset card borders & item strokes |
+| `PixelAmber` | `#F9AB00` | Pre-lockout warning & security alerts |
+| `PixelGreen` | `#7BD88F` | Secure status, granted permissions, success |
+| `PixelRed` | `#FFB4AB` | Error indicators, failed PIN attempts, warnings |
+
+## Typography
+Defined in [`Type.kt`](file:///a:/Development/app-lock/app/src/main/java/com/pixelguard/applock/ui/theme/Type.kt) adhering to Material 3 scale with **Tabular Figures (`fontFeatureSettings = "tnum"`)** enabled for stable numeric glyph spacing:
+- **Headline Large (`32sp / 40sp`, Bold)**: Screen titles (e.g., "Pixel Guard").
+- **Headline Medium (`26sp / 32sp`, SemiBold)**: Target app lock titles.
+- **Headline Small (`22sp / 28sp`, SemiBold)**: Sub-section headers.
+- **Title Large (`20sp / 26sp`, Medium)**: TopAppBar and section hero titles.
+- **Title Medium (`15sp / 22sp`, SemiBold)**: Settings row titles and list headers.
+- **Title Small (`14sp / 20sp`, SemiBold)**: Card titles and app list item names.
+- **Body Large (`16sp / 24sp`, Normal)**: Description copy and dialog paragraphs.
+- **Body Medium (`14sp / 20sp`, Normal)**: Standard explanatory copy.
+- **Body Small (`12sp / 16sp`, Normal)**: Secondary timestamps, categories, and helper notes (`tnum`).
+- **Label Medium (`12sp / 16sp`, Medium)**: Filter chips and inline controls.
+- **Label Small (`11sp / 14sp`, Bold)**: Badges (e.g., "Required", "Optional", "Active", `tnum`).
+
+## Spacing
+Standard 4dp/8dp grid system:
+- **`4dp` / `8dp`**: Micro gaps (badges, icon-to-label spacing, filter chip gaps).
+- **`10dp`**: Tightened inner item spacing in LazyColumns for optimal information density.
+- **`12dp` / `14dp`**: Inner card row padding and item spacing in LazyColumns.
+- **`16dp` / `20dp`**: Screen horizontal edge gutters and dialog container padding.
+- **`24dp` / `32dp`**: Section separators and hero element vertical margins.
+
+## Border Radius
+- **Micro (`6dp` - `8dp`)**: Badges, status chips, and tiny inline buttons.
+- **Small (`10dp` - `12dp`)**: Filter chips, action buttons, AppListItem app icon clipping.
+- **Medium (`16dp` - `18dp`)**: Cards, list items, permission cards, Settings cards.
+- **Large (`24dp` - `28dp`)**: Search bar, modal bottom sheets.
+- **Full Circle (`CircleShape`)**: Biometric pulse rings, keypad tonal discs, icon containers.
+
+## Shadows
+- Elevation shadows are deliberately minimized to preserve Android 17 edge-to-edge dark aesthetics.
+- Visual hierarchy is established via **container color luminance** and subtle border strokes (`1dp outlineVariant`).
+
+## Layout
+- **Edge-to-Edge**: `enableEdgeToEdge()` on all activities with proper `Scaffold` inner padding.
+- **LazyColumn**: Main apps dashboard, intruder logs, and settings lists.
+- **LazyRow**: Horizontal filter chips with spaced arrangement.
+- **Above-the-Fold Optimization**: Reclaimed ~120dp vertical space on Pixel 9 displays via horizontal security capsule.
+
+## Responsive Breakpoints
+- **Compact Phones (Pixel 9 / 9 Pro, width < 600dp)**: Standard single-column flow with floating bottom navigation/sheets.
+- **Expanded / Foldable (Pixel 9 Pro Fold, width >= 600dp)**: Centered max-width constraints (`Modifier.widthIn(max = 640.dp)`) for keypad and overlay dialogs to prevent stretched inputs.
+
+## Component Patterns
+
+### Buttons
+- **Primary Action (`Button`)**: Full-width or prominent, `RoundedCornerShape(14.dp)`, `height = 52.dp`.
+- **Tonal Button (`FilledTonalButton`)**: Secondary batch actions (e.g., "Lock All", "Lock Critical"), `shape = 10.dp`.
+- **Outlined Button (`OutlinedButton`)**: Tertiary dismissal / clear actions (e.g., "Unlock All", "Later").
+- **Keypad Button (`Box` / `IconButton`)**: `72.dp x 72.dp` circular borderless tonal discs (`surfaceVariant.copy(alpha = 0.42f)`) with 30sp tabular digits and haptic tick callbacks.
+
+### Forms
+- **Search Bar (`OutlinedTextField`)**: `singleLine = true`, `RoundedCornerShape(24.dp)`, leading search icon and trailing clear `IconButton`.
+- **Numeric Keypad**: 4 rows (`1-3`, `4-6`, `7-9`, `bio/0/del`) with instant 4-digit verification.
+- **Master PIN Setup Inputs**: Dual `OutlinedTextField` inputs (`Enter 4-Digit PIN` & `Confirm 4-Digit PIN`) with `PasswordVisualTransformation()`, chained `ImeAction.Next` ➔ `ImeAction.Done` keyboard navigation, wrapped in a scrollable `Modifier.imePadding()` container with automatic animated scroll-into-view behavior to prevent soft keyboard occlusion.
+
+### Cards
+- **`AppListItem`**: Card with `containerColor = surfaceVariant.copy(alpha = 0.35f)`, subtle `1dp outlineVariant` stroke on locked state, 44dp icon container, title, category, unified drill-down security capsule (`[ 🔑 PIN • $graceBadge › ]`), and trailing upright shackle spring bounce toggle (`-3dp` displacement, `0.92f` scale pulse).
+- **`SecurityHealthGaugeCard`**: Streamlined **82dp horizontal security capsule** featuring a 54dp arc gauge (0–100%), tabular percentage display, status readout, inline `[Lock Critical]`, and `[Unlock All]` pill backed by a confirmation safeguard dialog (`Unlock All Apps?`).
+- **`PermissionCard`**: 18dp Material 3 card structured into a two-tier layout:
+  - *Header Row*: 40dp circular tonal icon disc (`primaryContainer` with `onPrimaryContainer` tint for crisp contrast), title with guaranteed single-line stability (hides redundant `[Required]` badge once granted), and top-right `(v) Active` badge in soft pastel pill (`primary.copy(alpha = 0.12f)` container + `primary` text).
+  - *Body*: 52dp-indented description aligned cleanly beneath the title column (clamped to `maxLines = 1` when granted to save ~64dp of viewport height).
+  - *Actions*: Bottom-right action row (`Later` text button + `Enable` filled button; or `OutlinedButton` when skipped). Eliminates horizontal crowding and guarantees 100% badge visibility.
+- **`Setup Permissions Primary Action Button`**: 52dp prominent action button dynamically reflecting remaining requirements (`"Grant 2 Required Permissions"` ➔ `"Grant 1 Remaining Permission"` ➔ `"Continue to App Lock"`). Fully actionable across all states, directly navigating the user to the next ungranted permission.
+- **`SettingsCard`**: 18dp container with `surfaceContainer` tint, `1dp outlineVariant` border stroke, 32dp header icon disc, and 36dp tonal row icon discs.
+- **`Actionable Hero Banner` (Settings)**: Interactive security status card that detects unconfigured protections (e.g. Settings Protection, Recents Masking) and auto-scrolls down to the offending controls upon tap.
+- **`Recents Privacy Masking & Screen Mirroring`**: Toggles `FLAG_SECURE` dynamically on `MainActivity`, `LockActivity`, and system overlays. When disabled (default), enables full laptop screen mirroring via `scrcpy` and local screenshots. When enabled, strictly enforces hardware-level SurfaceFlinger blanking for maximum overview privacy.
+
+### Navigation & Chrome
+- TopAppBar includes back arrow button, brand title, live status count (`Pixel 9 Armor • $lockedCount Protected`), and shield action icon.
+- Consolidated **Search & Sort Strip**: Single horizontal row combining an edge-to-edge search bar with a compact sort assist chip (`Sort: A–Z`), accompanied by category pills with pinned `Locked Only ($count)` chip, saving 42dp of above-the-fold viewport height.
+
+### Modals & Bottom Sheets
+- **`AppSecurityProfileSheetContent`**: Modal bottom sheet with horizontal segmented `FilterChip` selector (`Default`, `Instant (0s)`, `30s`, `1m`, `5m`, `15m`) with dynamic contextual caption, reclaiming over 180dp of vertical height vs. vertical radio lists.
+- Modal bottom sheets always use `rememberModalBottomSheetState(skipPartiallyExpanded = true)`.
+
+### Tables
+- Data is structured into structured lists or card grids rather than dense HTML tables.
+
+### Loading States
+- Asynchronous app queries and icon rasterization occur on `Dispatchers.IO` before list rendering, with clean shimmer or circular progress indicators for first-time indexing.
+
+### Empty States
+- Illustrated placeholder icons with supportive typography when search yields zero matches or intruder logs are empty.
+
+### Error States & Sensory Choreography
+- **3-Stage PIN Failure Sequence**:
+  1. *Stage 1 (Error Morph)*: PIN dots smoothly morph from brand color to `MaterialTheme.colorScheme.error` over 60ms.
+  2. *Stage 2 (Elastic Shake)*: Keypad header and dots execute a 5-point dampened spring shake (-22f to +22f) over 180ms with heavy haptic feedback.
+  3. *Stage 3 (Dissolve & Reset)*: Dots fade out over 120ms, pin input resets, and animatables cleanly snap back to base state.
+- **Lockout Penalty Indicator**: Sleek `LinearProgressIndicator` drain bar showing elapsed lockout penalty time directly under lockout countdown typography.
+- **Permission Warning**: Tinted red/amber container banner (`errorContainer`) with clear setup guidance.
+
+### Animations
+- **Physics-Based Springs**: `spring(stiffness = Spring.StiffnessMediumLow)` for lock toggles, shackle bounces, and gauge animations.
+- **Biometric Aura**: Infinite pulsing scale (`1f` to `1.18f`) and alpha (`0.2f` to `0.55f`) with `tween(1200, FastOutSlowInEasing)`.
+- **Refresh Rate**: Guaranteed locked 120Hz smooth scrolling without frame skips.
+
+### Haptics (3-Tiered Linear Actuations)
+- **`EFFECT_TICK`**: Keypad numeric button taps, category filter chip clicks.
+- **`EFFECT_CLICK`**: Lock toggle switches, action buttons.
+- **`EFFECT_DOUBLE_CLICK`**: Unlock success confirmation.
+- **`EFFECT_HEAVY_CLICK`**: PIN auth failure, lockout penalty.
+
+### Accessibility
+- Touch targets strictly maintain a minimum of **48dp x 48dp** (keypad buttons are 72dp).
+- Content descriptions provided on all iconography and image components.
+- High-contrast color pairings conforming to WCAG AA dark mode guidelines.
+
+## Do Not
+- **Do NOT** use hardcoded non-theme colors for backgrounds or text.
+- **Do NOT** use square (0dp radius) buttons or harsh rectangular cards.
+- **Do NOT** perform heavy layout or bitmap calculations inside `@Composable` drawing passes.
+- **Do NOT** display light mode surfaces when ambient privacy lock is engaged.
+

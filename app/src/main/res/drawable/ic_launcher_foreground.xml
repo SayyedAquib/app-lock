@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Shield Armor Plate: Left Facet (Light slate reflection) -->
+    <path
+        android:fillColor="#1D2A3C"
+        android:pathData="M54,25 L31,28 C31,56 40,73 54,82 Z" />
+
+    <!-- Shield Armor Plate: Right Facet (Deep midnight shadow) -->
+    <path
+        android:fillColor="#131C28"
+        android:pathData="M54,25 L77,28 C77,56 68,73 54,82 Z" />
+
+    <!-- Center Spine Accent -->
+    <path
+        android:strokeColor="#2F4460"
+        android:strokeWidth="1.2"
+        android:pathData="M54,26 V81" />
+
+    <!-- Outer Armor Rim: Satin-Silver and Pixel Cobalt Bezel -->
+    <path
+        android:strokeColor="#8AB4F8"
+        android:strokeWidth="3.2"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round"
+        android:pathData="M54,25 L31,28 C31,56 40,73 54,82 C68,73 77,56 77,28 Z" />
+
+    <!-- Inner Shield Rim Highlight -->
+    <path
+        android:strokeColor="#D2E3FC"
+        android:strokeWidth="1"
+        android:strokeAlpha="0.6"
+        android:pathData="M54,28 L34,31 C34,54 42,69 54,78 C66,69 74,54 74,31 Z" />
+
+    <!-- Padlock Shackle: Hardened Chrome Arc -->
+    <path
+        android:strokeColor="#E8F0FE"
+        android:strokeWidth="3.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M47,48 V42 C47,38.1 50.1,35 54,35 C57.9,35 61,38.1 61,42 V48" />
+
+    <!-- Padlock Body: Pixel Cobalt Armor -->
+    <path
+        android:fillColor="#1A73E8"
+        android:pathData="M47,47 H61 C63.2,47 65,48.8 65,51 V61 C65,63.2 63.2,65 61,65 H47 C44.8,65 43,63.2 43,61 V51 C43,48.8 44.8,47 47,47 Z" />
+
+    <!-- Padlock Upper Bevel Highlight -->
+    <path
+        android:fillColor="#4285F4"
+        android:pathData="M47,47 H61 C63.2,47 65,48.8 65,51 V54 H43 V51 C43,48.8 44.8,47 47,47 Z" />
+
+    <!-- Padlock Keyhole Aperture (Deep Cutout) -->
+    <path
+        android:fillColor="#0D131A"
+        android:strokeColor="#A8C7FA"
+        android:strokeWidth="0.8"
+        android:pathData="M54,52 C55.3,52 56.4,53.1 56.4,54.4 C56.4,55.2 56,55.9 55.4,56.3 L55.4,59.5 C55.4,60.1 54.8,60.6 54,60.6 C53.2,60.6 52.6,60.1 52.6,59.5 L52.6,56.3 C52,55.9 51.6,55.2 51.6,54.4 C51.6,53.1 52.7,52 54,52 Z" />
+
+    <!-- Keyhole Core Glow -->
+    <path
+        android:fillColor="#8AB4F8"
+        android:pathData="M54,54.5 A1.2,1.2 0 1,0 54,54.5" />
+</vector>

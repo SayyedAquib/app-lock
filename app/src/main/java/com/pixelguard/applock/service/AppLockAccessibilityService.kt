@@ -1,0 +1,225 @@
+package com.pixelguard.applock.service
+
+import android.accessibilityservice.AccessibilityService
+import android.content.Intent
+import android.os.Build
+import android.util.Log
+import android.view.accessibility.AccessibilityEvent
+import com.pixelguard.applock.AppLockApplication
+import com.pixelguard.applock.BuildConfig
+import com.pixelguard.applock.domain.usecase.SessionManager
+import com.pixelguard.applock.service.overlay.OverlayWindowManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+
+class AppLockAccessibilityService : AccessibilityService() {
+
+    private lateinit var overlayWindowManager: OverlayWindowManager
+    private val scope = CoroutineScope(Dispatchers.Main)
+    private var lastPackage: String = ""
+
+    // In-memory cache for zero-latency accessibility interception
+    private var cachedLockedPackages: Set<String> = emptySet()
+    private var cachedPreferences: com.pixelguard.applock.data.model.LockPreferences = com.pixelguard.applock.data.model.LockPreferences()
+
+    private val screenOffReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                if (BuildConfig.DEBUG) Log.i(TAG, "Screen off event: resetting foreground session")
+                SessionManager.onScreenOff()
+            }
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        overlayWindowManager = OverlayWindowManager(this)
+
+        val repository = AppLockApplication.instance.repository
+        scope.launch {
+            repository.lockedPackages.collect {
+                cachedLockedPackages = it
+            }
+        }
+        scope.launch {
+            repository.preferences.collect {
+                cachedPreferences = it
+            }
+        }
+
+        val filter = android.content.IntentFilter(Intent.ACTION_SCREEN_OFF)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(screenOffReceiver, filter, android.content.Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(screenOffReceiver, filter)
+        }
+    }
+
+    internal fun setCachedLockedPackagesForTest(packages: Set<String>) {
+        cachedLockedPackages = packages
+    }
+
+    internal fun setCachedPreferencesForTest(preferences: com.pixelguard.applock.data.model.LockPreferences) {
+        cachedPreferences = preferences
+    }
+
+    internal fun setLastPackageForTest(pkg: String) {
+        lastPackage = pkg
+    }
+
+    internal fun getLastPackageForTest(): String = lastPackage
+
+    internal fun getScreenOffReceiverForTest(): android.content.BroadcastReceiver = screenOffReceiver
+
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event == null) return
+
+        // 1. Only process actual window state changes (activity/task transitions).
+        // TYPE_WINDOWS_CHANGED emits continuously for gesture navigation bar, keyboard,
+        // and overlay layer changes which MUST NOT trigger app relocks or session resets.
+        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            return
+        }
+
+        val packageName = event.packageName?.toString() ?: return
+        val className = event.className?.toString() ?: ""
+
+        // 2. Ignore transient system packages, input methods, credential prompts, and Pixel Guard itself
+        if (isSystemOrTransientPackage(packageName) || isCredentialOrBiometricPrompt(className)) {
+            return
+        }
+
+        val lockedPackages = cachedLockedPackages
+        val preferences = cachedPreferences
+
+        val isLocked = lockedPackages.contains(packageName) ||
+                (preferences.isSettingsProtected && SETTINGS_AND_INSTALLER_PACKAGES.contains(packageName)) ||
+                (preferences.isPlayStoreProtected && packageName == PLAY_STORE_PACKAGE)
+
+        if (BuildConfig.DEBUG) Log.i(TAG, "Window event: $packageName, class=$className, isLocked=$isLocked")
+
+        if (isLocked) {
+            val isNight = SessionManager.isNightLockdownActive(
+                scheduleEnabled = preferences.isScheduleEnabled,
+                startHour = preferences.scheduleStartHour,
+                endHour = preferences.scheduleEndHour
+            )
+            val effectiveGrace = SessionManager.getEffectiveGracePeriod(
+                packageName = packageName,
+                defaultGraceSeconds = preferences.gracePeriodSeconds,
+                isNightLockdown = isNight,
+                isPerAppGraceEnabled = preferences.isPerAppGraceEnabled,
+                appGracePeriodsJson = preferences.appGracePeriodsJson
+            )
+
+            val isUnlocked = SessionManager.isTemporarilyUnlocked(packageName, effectiveGrace)
+            if (!isUnlocked) {
+                if (BuildConfig.DEBUG) Log.i(TAG, "Launching LockActivity for: $packageName (nightLockdown=$isNight, grace=$effectiveGrace)")
+                val lockIntent = Intent(this@AppLockAccessibilityService, com.pixelguard.applock.ui.lock.LockActivity::class.java).apply {
+                    putExtra(com.pixelguard.applock.ui.lock.LockActivity.EXTRA_TARGET_PACKAGE, packageName)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_NO_ANIMATION or
+                            Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+                }
+                startActivity(lockIntent)
+            } else {
+                if (BuildConfig.DEBUG) Log.i(TAG, "Package is temporarily unlocked: $packageName")
+                SessionManager.markAppResumed(packageName)
+            }
+        } else {
+            // Switched to an unlocked user application, home launcher, or recents
+            if (BuildConfig.DEBUG) Log.i(TAG, "Switched to package: $packageName")
+            if (isLauncherOrRecents(packageName)) {
+                overlayWindowManager.dismissOverlay()
+                lastPackage.let { prevPkg ->
+                    if (prevPkg.isNotEmpty() && (lockedPackages.contains(prevPkg) || isProtectedSystemPackage(prevPkg, preferences))) {
+                        val isNight = SessionManager.isNightLockdownActive(
+                            preferences.isScheduleEnabled,
+                            preferences.scheduleStartHour,
+                            preferences.scheduleEndHour
+                        )
+                        val effectiveGrace = SessionManager.getEffectiveGracePeriod(
+                            packageName = prevPkg,
+                            defaultGraceSeconds = preferences.gracePeriodSeconds,
+                            isNightLockdown = isNight,
+                            isPerAppGraceEnabled = preferences.isPerAppGraceEnabled,
+                            appGracePeriodsJson = preferences.appGracePeriodsJson
+                        )
+                        if (effectiveGrace <= 0 && !SessionManager.isRecentlyUnlocked(prevPkg, 3000L)) {
+                            SessionManager.lockPackage(prevPkg)
+                        }
+                    }
+                }
+            }
+            SessionManager.onAppSwitched(packageName, preferences.gracePeriodSeconds)
+        }
+
+        lastPackage = packageName
+    }
+
+    private fun isProtectedSystemPackage(
+        packageName: String,
+        preferences: com.pixelguard.applock.data.model.LockPreferences
+    ): Boolean {
+        return (preferences.isSettingsProtected && SETTINGS_AND_INSTALLER_PACKAGES.contains(packageName)) ||
+                (preferences.isPlayStoreProtected && packageName == PLAY_STORE_PACKAGE)
+    }
+
+    private fun isSystemOrTransientPackage(packageName: String): Boolean {
+        return packageName == applicationContext.packageName ||
+                packageName == "android" ||
+                packageName.contains("systemui", ignoreCase = true) ||
+                packageName.contains("inputmethod", ignoreCase = true) ||
+                packageName.contains("keyboard", ignoreCase = true) ||
+                packageName == "com.google.android.gms" ||
+                packageName.startsWith("com.google.android.ext.") ||
+                packageName == "com.google.android.permissioncontroller" ||
+                packageName == "com.android.permissioncontroller" ||
+                packageName == "com.google.android.as" ||
+                packageName == "com.android.intentresolver" ||
+                packageName.contains("photopicker", ignoreCase = true) ||
+                packageName == "com.google.android.providers.media.module" ||
+                packageName == "com.android.providers.media.module"
+    }
+
+    private fun isLauncherOrRecents(packageName: String): Boolean {
+        return packageName.contains("launcher", ignoreCase = true) ||
+                packageName.contains("recents", ignoreCase = true) ||
+                packageName == "com.google.android.apps.nexuslauncher" ||
+                packageName == "com.android.launcher3"
+    }
+
+    private fun isCredentialOrBiometricPrompt(className: String): Boolean {
+        return className.contains("ConfirmDeviceCredential", ignoreCase = true) ||
+                className.contains("BiometricPrompt", ignoreCase = true) ||
+                className.contains("Fingerprint", ignoreCase = true) ||
+                className.contains("DeviceCredential", ignoreCase = true)
+    }
+
+    override fun onInterrupt() {
+        Log.w(TAG, "Accessibility service interrupted")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        overlayWindowManager.dismissOverlay()
+        try {
+            unregisterReceiver(screenOffReceiver)
+        } catch (_: Exception) {}
+    }
+
+    companion object {
+        private const val TAG = "AppLockAccessibility"
+
+        private val SETTINGS_AND_INSTALLER_PACKAGES = setOf(
+            "com.android.settings",
+            "com.google.android.packageinstaller",
+            "com.android.packageinstaller",
+            "com.samsung.android.packageinstaller"
+        )
+
+        private const val PLAY_STORE_PACKAGE = "com.android.vending"
+    }
+}

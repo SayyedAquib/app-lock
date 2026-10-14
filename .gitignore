@@ -1,0 +1,124 @@
+# ==============================================================================
+# Pixel Guard (.gitignore)
+# Git Version Control Ignore Rules
+# Target: Native Android (Jetpack Compose / Kotlin / Gradle Multi-Module)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Built Application Binaries & Bundles
+# ------------------------------------------------------------------------------
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Native object files & shared libraries
+*.so
+*.dylib
+*.dll
+*.obj
+*.o
+
+# ------------------------------------------------------------------------------
+# 2. Generated Build Artifacts & Intermediate Trees
+# ------------------------------------------------------------------------------
+bin/
+gen/
+out/
+build/
+/build
+app/build/
+/app/build
+.externalNativeBuild
+.cxx
+buildOutputCleanup/
+
+# ------------------------------------------------------------------------------
+# 3. Gradle Daemons, Cache & Profiler Dumps
+# ------------------------------------------------------------------------------
+.gradle/
+.gradle
+*.hprof
+*.prof
+*.profm
+*.log
+
+# ------------------------------------------------------------------------------
+# 4. Local Developer Configuration & Environment Secrets
+# ------------------------------------------------------------------------------
+local.properties
+/local.properties
+.env
+.env.*
+secrets.properties
+
+# Custom developer scripts (allow only gradlew.bat for the Gradle wrapper)
+*.bat
+!gradlew.bat
+*.cmd
+*.ps1
+*.sh
+!gradlew
+
+# ------------------------------------------------------------------------------
+# 5. Signing Keys, Certificates, & Keystores
+# ------------------------------------------------------------------------------
+*.jks
+*.keystore
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.der
+
+# ------------------------------------------------------------------------------
+# 6. Android Studio, IntelliJ IDEA & Editor Metadata
+# ------------------------------------------------------------------------------
+*.iml
+.idea/
+/.idea/
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+*.ipr
+*.iws
+
+# Kotlin compiler cache & VS Code
+.kotlin/
+.vscode/
+
+# ------------------------------------------------------------------------------
+# 7. OS-Specific Junk
+# ------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ------------------------------------------------------------------------------
+# 8. Temporary Images, Captures & Hierarchy Dumps
+# ------------------------------------------------------------------------------
+captures/
+/captures
+*.png
+*.jpg
+*.jpeg
+phone_screen.png
+current_screen.png
+current_device_screen.png
+ui.xml
+window_dump.xml
+scratch/
+tmp/
+temp/

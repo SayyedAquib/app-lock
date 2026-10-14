@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Pixel Guard</string>
+    <string name="accessibility_service_label">Pixel Guard Protection</string>
+    <string name="accessibility_service_description">Monitors foreground app launches to instantly present your secure biometric or PIN lock screen.</string>
+    <string name="notification_service_label">Pixel Guard Notification Shield</string>
+    <string name="notification_service_description">Protects incoming message previews and sensitive notifications from locked apps.</string>
+    <string name="foreground_service_channel_name">Pixel Guard Security</string>
+    <string name="foreground_service_notification_title">Pixel Guard Active</string>
+    <string name="foreground_service_notification_text">Protecting your private apps and notifications</string>
+</resources>

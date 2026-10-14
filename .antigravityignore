@@ -1,0 +1,128 @@
+# ==============================================================================
+# Pixel Guard (.antigravityignore)
+# Antigravity AI Code Indexing, Search & Context Ignore Specifications
+# Target: Native Android (Jetpack Compose / Kotlin / Gradle Multi-Module)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Version Control & Internal Agent Metadata
+# ------------------------------------------------------------------------------
+.git/
+.github/
+
+# ------------------------------------------------------------------------------
+# 2. Build Outputs, Intermediates & Generated Binaries
+# ------------------------------------------------------------------------------
+# Root and module-level build output directories
+build/
+**/build/
+out/
+**/out/
+bin/
+gen/
+
+# Android build cache and intermediate artifacts
+.cxx/
+**/.cxx/
+.externalNativeBuild/
+**/.externalNativeBuild/
+**/build/intermediates/
+**/build/outputs/
+**/build/tmp/
+**/build/reports/
+**/build/test-results/
+
+# Compiled bytecodes and packages
+*.apk
+*.ap_
+*.aab
+*.aar
+*.dex
+*.class
+
+# Native libraries and object files
+*.so
+*.dylib
+*.dll
+*.obj
+*.o
+
+# ------------------------------------------------------------------------------
+# 3. Gradle Daemons, Cache & Profiler Dumps
+# ------------------------------------------------------------------------------
+.gradle/
+**/.gradle/
+buildOutputCleanup/
+*.hprof
+*.prof
+*.profm
+
+# ------------------------------------------------------------------------------
+# 4. Local Developer Configuration & Secrets
+# ------------------------------------------------------------------------------
+# SDK location and local properties
+local.properties
+**/local.properties
+
+# Signing keys, certificates, keystores & tokens
+*.jks
+*.keystore
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.der
+
+# ------------------------------------------------------------------------------
+# 5. IDE & Editor Metadata
+# ------------------------------------------------------------------------------
+# Android Studio / IntelliJ IDEA
+.idea/
+**/.idea/
+*.iml
+**/*.iml
+*.ipr
+*.iws
+
+# Kotlin compiler cache
+.kotlin/
+**/.kotlin/
+
+# Visual Studio Code
+.vscode/
+**/.vscode/
+
+# ------------------------------------------------------------------------------
+# 6. Device Screencaps, UI Dumps & Temporary Captures
+# ------------------------------------------------------------------------------
+# Root device screenshots and dumps from testing & debugging
+/current_screen.png
+/current_device_screen.png
+/phone_screen.png
+/ui.xml
+captures/
+**/captures/
+*.log
+
+# ------------------------------------------------------------------------------
+# 7. Operating System & File System Artifacts
+# ------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ------------------------------------------------------------------------------
+# 8. Whitelist Critical Project Assets (Safety Overrides)
+# ------------------------------------------------------------------------------
+# Ensure source code, manifests, resources, and configuration are always indexed
+!app/src/**
+!app/build.gradle.kts
+!build.gradle.kts
+!settings.gradle.kts
+!gradle.properties
+!gradle/libs.versions.toml
+!docs/**
+!*.md

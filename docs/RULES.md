@@ -1,0 +1,89 @@
+# Project Rules
+
+## General Rules
+- Always preserve existing comments and documentation unrelated to code modifications.
+- Keep all code changes strictly within the user workspace (`a:/Development/app-lock/`).
+- Never perform main-thread blocking operations (disk IO, bitmap decoding, package queries).
+
+## Code Organization
+- Place code strictly in its designated architectural layer (`data/`, `domain/`, `service/`, `ui/`).
+- Do not mix Compose UI code with background Service logic.
+- Keep helper utilities and managers scoped and testable.
+
+## Naming Conventions
+- **Composables**: UpperCamelCase nouns or adjective-nouns (e.g. `MainScreen`, `PermissionCard`, `SecurityHealthGaugeCard`).
+- **Data Classes & Models**: UpperCamelCase (e.g. `AppItem`, `LockPreferences`, `IntruderRecord`).
+- **Functions & Methods**: lowerCamelCase verbs (e.g. `verifyPin()`, `enableHighRefreshRate()`, `toggleAppLock()`).
+- **Constants**: SCREAMING_SNAKE_CASE in companion objects (e.g. `EXTRA_TARGET_PACKAGE`, `KEY_PIN_HASH`).
+
+## Type Safety
+- Annotate all data classes consumed by Compose `LazyColumn` items with `@Immutable`.
+- Prefer strict Kotlin types and enums (`AppCategory`, `LockType`) over raw strings or integer flags.
+- Avoid nullable platform types; provide safe defaults or fallbacks when querying Android system APIs.
+
+## Error Handling
+- Never crash the host application if an optional subsystem fails (e.g., front camera hardware failure or missing biometric sensor).
+- Wrap all biometric, camera, and window manager invocations in guarded `try / catch` blocks with informative Android Logcat logging.
+- Fall back gracefully to the custom Master PIN keypad whenever biometrics are unavailable.
+
+## API Rules
+- Use `androidx.biometric:biometric` targeting `BiometricManager.Authenticators.BIOMETRIC_STRONG`.
+- Always verify `canAuthenticate()` before invoking `BiometricPrompt.authenticate()`.
+- Use `setNegativeButtonText("Use PIN")` to avoid exposing the device screen passcode.
+
+## Database Rules
+- Store all user preferences in Jetpack DataStore; never use legacy `SharedPreferences`.
+- Never store plaintext PINs. Always generate a cryptographically random 16-byte salt and persist the stretched PBKDF2WithHmacSHA256 (200,000 iterations) hash.
+- Never hardcode default fallback PIN strings; enforce explicit configuration via onboarding.
+
+## Security Rules
+- Apply `FLAG_SECURE` to windows whenever `isRecentsMaskingEnabled` is active.
+- Save intruder photos strictly in internal sandboxed storage (`context.filesDir/intruders`). Never write intruder photos to `Environment.getExternalStorageDirectory()` or Android `MediaStore`.
+- Do not expose any network permissions (`android.permission.INTERNET`) in `AndroidManifest.xml`.
+
+## Dependency Rules
+- Declare all dependencies in `gradle/libs.versions.toml`.
+- Do not add third-party networking, analytics, ad networks, or heavy UI frameworks without explicit approval.
+
+## UI Rules
+- Build all UI using **Jetpack Compose with Material 3** tokens.
+- Maintain touch targets of at least **48dp x 48dp** for all interactive components.
+- Support 120Hz LTPO display timing (<8.33ms per frame) during list rendering and scrolling.
+
+## State Management
+- Expose state from ViewModels using `StateFlow<T>` via `.asStateFlow()`.
+- Never mutate state directly from composables; emit intents/callbacks to the ViewModel.
+- Coordinate in-memory session unlock state strictly through `SessionManager`.
+
+## Testing Rules
+- Test cryptographic hashing, salt generation, and verification logic with unit tests.
+- Verify grace period expiration and night lockdown calculations with deterministic timestamp tests.
+- Always perform smoke verification on target hardware (connected Pixel 9) via ADB.
+
+## Documentation Rules
+- **Mandatory Documentation Updates**: Always immediately update relevant documentation files (`docs/DESIGN.md`, `docs/DECISIONS.md`, `docs/MEMORY.md`, `docs/TESTING.md`, etc.) in the SAME step whenever any code, UI, architectural, or configuration changes are made.
+- **Architectural Decision Records (ADRs)**: Every non-trivial architectural, design, or testing decision must be promptly appended to `docs/DECISIONS.md`.
+- **Session Memory Tracking**: Always update `docs/MEMORY.md` with active status, recently completed tasks, and current session handoff notes.
+
+## Git & Workspace Rules
+- Do not commit generated build outputs (`build/`, `.gradle/`, `*.apk`, `local.properties`).
+- Maintain `.antigravityignore` at root to prevent build artifacts, bytecode (`*.dex`, `*.class`), caches, and temporary debug captures from consuming AI context and degrading semantic search.
+- **Immediate Ephemeral Cleanup**: Always delete temporary files and folders (adb screencaps `*.png`, UI hierarchy dumps `ui.xml`, scratch logs, or test dumps) immediately once their work is completed. Never leave ephemeral artifacts in the repository.
+- Keep commit messages concise, descriptive, and prefixed with the affected component (e.g., `feat(ui):`, `fix(perf):`).
+
+## Performance Rules
+- **Icon Pre-Rasterization**: App icons must be pre-converted into 120x120 Bitmaps on `Dispatchers.IO` in background coroutines.
+- **O(1) In-Memory Lookups**: Parse JSON strings outside Lazy lists using `remember`; do not parse JSON inside row composables.
+- **Lazy Recycling**: Provide `key` and `contentType` parameters in all `LazyColumn` implementations.
+- **Memoization**: Memoize complex counts or filtered sub-lists with `remember(allApps)` to avoid repeated list iterations during scroll.
+
+## Forbidden Practices
+- **DO NOT** leave temporary debug files, screencaps, or UI dumps in the workspace after work is completed.
+- **DO NOT** use `DEVICE_CREDENTIAL` in `BiometricPrompt.PromptInfo`.
+- **DO NOT** execute `app.icon.toBitmap()` synchronously inside `@Composable` functions.
+- **DO NOT** replace `AccessibilityService` with periodic `UsageStatsManager` polling loops.
+- **DO NOT** request or add `android.permission.INTERNET` to the project manifest.
+- **DO NOT** hardcode non-theme colors for layout backgrounds or typography.
+- **DO NOT** hardcode default or fallback PIN strings (e.g. "1234") — enforce user onboarding setup.
+- **DO NOT** emit raw package names or sensitive telemetry in `Log.i/d` without `BuildConfig.DEBUG` guards.
+
