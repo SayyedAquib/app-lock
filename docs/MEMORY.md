@@ -188,6 +188,12 @@
     - Confirmed `pixel9-screen.bat` (containing user profile paths) and `local.properties` (containing local SDK paths) are completely ignored and shielded from git.
     - Sanitized physical device hardware serials (`53201VDAQ00067`) and home Wi-Fi IP addresses (`192.168.1.x`) from `docs/MEMORY.md`.
     - Verified zero cloud telemetry, zero network permissions, and zero hardcoded secrets.
+41. **Google 4-Color App Icon Redesign & Brand Alignment (ADR 030)**:
+    - Conducted comprehensive `/grill-me` design alignment session establishing full consensus on aligning Pixel Guard's launcher icon with Google first-party apps (Google Authenticator, Drive, Files, Play Protect).
+    - **Adaptive Background (`ic_launcher_background.xml`)**: Replaced dark midnight slate and radar rings with a clean solid `#FFFFFF` adaptive canvas.
+    - **Adaptive Foreground (`ic_launcher_foreground.xml`)**: Implemented modern rounded shield crest divided into 4 Google brand color quadrants (Blue `#4285F4`, Red `#EA4335`, Yellow `#FBBC05`, Green `#34A853`), featuring a unified white negative-space padlock cutout (shackle + body) with shield colors peeking through the shackle arch and a Google Material Blue (`#1A73E8`) keyhole.
+    - **Monochrome Themed Icon (`ic_launcher_monochrome.xml`)**: Structured single-path `android:fillType="evenOdd"` vector carving out the padlock silhouette and restoring the keyhole for native Monet dynamic wallpaper theming on Android 13-17 Pixel Launcher.
+    - Passed all 122 automated unit/service tests, verified clean build with `assembleDebug`, and deployed directly to connected Google Pixel 9 via ADB.
 
 ## Known Problems
 - None in active runtime. On Android 17, initial sideloading requires the user to tap "Allow restricted settings" in App Info for Accessibility Service toggle activation (interactive guidance provided in Onboarding).
@@ -215,6 +221,7 @@
 - Decided on Active Foreground Session Retention & Exit-Based Grace Countdown (ADR 027).
 - Decided on Repository Context Hygiene & Antigravity Ignore Configuration (ADR 028).
 - Decided on Mandatory Ephemeral Artifact Cleanup & Workspace Hygiene (ADR 029).
+- Decided on Google 4-Color Brand Palette, Clean White Canvas & Negative-Space Padlock Cutout (ADR 030).
 
 ## Next Steps
 - Explore Roadmap feature: Calculator / Notes Stealth Disguise mode.

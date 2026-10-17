@@ -920,3 +920,32 @@ During iterative on-device testing and visual debugging, agents and developers f
 - Clean, uncluttered repository root containing strictly production code, tests, build configurations, and governance docs.
 - Zero orphaned screencaps or XML dumps left in workspace.
 - Enforced across all future AI agent and developer workflows.
+
+---
+
+## ADR 030: Google App Icon Redesign & Brand Alignment
+### Date
+2026-10-17
+### Status
+Accepted
+### Context
+The previous launcher icon featured a dark midnight slate background with concentric radar rings and a chiseled medieval-modern armored crest. While secure in theme, this visual style resembled third-party gaming or legacy antivirus applications and clashed with the aesthetic of native Google apps on the Pixel 9 home screen (where apps like Google Drive, Authenticator, Files, Maps, and Play Protect feature clean white adaptive backgrounds and bold Google brand palettes).
+### Options Considered
+1. Retain dark midnight slate theme with updated vector accents. (Rejected: still feels external and incompatible with Google Pixel launcher home screen).
+2. Pixel System Utility Blue on white (like Google Clock / Contacts). (Good, but lacks the high-visibility multi-layer brand punch of flagship Google security tools).
+3. Google 4-Color Brand Palette on Clean White with Center Padlock Negative-Space Cutout (like Google Authenticator, Drive, Files, and Play Protect). (Adopted).
+### Decision
+Redesign the adaptive icon suite (`ic_launcher_background.xml`, `ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`):
+1. **Background**: Pure solid white (`#FFFFFF`) adaptive container.
+2. **Foreground**: Modern rounded shield silhouette divided into 4 flowing Google brand quadrants:
+   - Top-Left: Google Blue (`#4285F4`)
+   - Top-Right: Google Red (`#EA4335`)
+   - Bottom-Right: Google Yellow (`#FBBC05`)
+   - Bottom-Left: Google Green (`#34A853`)
+3. **Padlock Cutout**: A pure white negative-space padlock (shackle + body) carved through the center of the shield, revealing the clean white background canvas with shield colors peeking through the shackle arch and a Google Material Blue (`#1A73E8`) keyhole in the lock body.
+4. **Monochrome Dynamic Theming**: Implement a single solid vector path utilizing `android:fillType="evenOdd"` to cleanly hollow out the lock silhouette and restore the keyhole, ensuring seamless Material You Monet dynamic wallpaper theming on Android 13-17 Pixel Launcher.
+### Consequences
+- Icon blends seamlessly with Google first-party apps on Google Pixel 9 home screen and app drawer.
+- Zero viewport clipping across circle, squircle, and rounded square launcher masks.
+- Tested and verified with 100% unit test pass rate and deployed directly to connected Google Pixel 9.
+

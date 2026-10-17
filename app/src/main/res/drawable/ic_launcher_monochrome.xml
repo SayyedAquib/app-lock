@@ -5,25 +5,9 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Outer Armor Shield Contour -->
-    <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4.2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M54,25 L31,28 C31,56 40,73 54,82 C68,73 77,56 77,28 Z" />
-
-    <!-- Padlock Shackle Arc -->
-    <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M47,48 V42 C47,38.1 50.1,35 54,35 C57.9,35 61,38.1 61,42 V48" />
-
-    <!-- Padlock Body with Precision Keyhole Cutout -->
+    <!-- Pixel Monet Themed Icon: Solid shield silhouette with padlock cutout and keyhole -->
     <path
         android:fillColor="#FFFFFF"
         android:fillType="evenOdd"
-        android:pathData="M47,47 H61 C63.2,47 65,48.8 65,51 V61 C65,63.2 63.2,65 61,65 H47 C44.8,65 43,63.2 43,61 V51 C43,48.8 44.8,47 47,47 Z M54,52 C55.3,52 56.4,53.1 56.4,54.4 C56.4,55.2 56,55.9 55.4,56.3 L55.4,59.5 C55.4,60.1 54.8,60.6 54,60.6 C53.2,60.6 52.6,60.1 52.6,59.5 L52.6,56.3 C52,55.9 51.6,55.2 51.6,54.4 C51.6,53.1 52.7,52 54,52 Z" />
+        android:pathData="M 54,26 C 43,26 33,29.2 29,34.2 C 27,37.2 26.5,42.5 26.5,50 C 26.5,63.5 37.5,74.5 54,82.5 C 70.5,74.5 81.5,63.5 81.5,50 C 81.5,42.5 81,37.2 79,34.2 C 75,29.2 65,26 54,26 Z M 45.5,46 V 39.5 C 45.5,34.8 49.3,31 54,31 C 58.7,31 62.5,34.8 62.5,39.5 V 46 H 63 C 64.9,46 66.5,47.6 66.5,49.5 V 61.5 C 66.5,63.4 64.9,65 63,65 H 45 C 43.1,65 41.5,63.4 41.5,61.5 V 49.5 C 41.5,47.6 43.1,46 45,46 Z M 49.5,46 V 39.5 C 49.5,37 51.5,35 54,35 C 56.5,35 58.5,37 58.5,39.5 V 46 Z M 54,51.5 C 55.4,51.5 56.5,52.6 56.5,54 C 56.5,54.9 56,55.7 55.3,56.1 L 55.3,59.5 C 55.3,60.2 54.7,60.8 54,60.8 C 53.3,60.8 52.7,60.2 52.7,59.5 L 52.7,56.1 C 52,55.7 51.5,54.9 51.5,54 C 51.5,52.6 52.6,51.5 54,51.5 Z" />
 </vector>

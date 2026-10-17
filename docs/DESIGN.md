@@ -141,6 +141,21 @@ Standard 4dp/8dp grid system:
 - Content descriptions provided on all iconography and image components.
 - High-contrast color pairings conforming to WCAG AA dark mode guidelines.
 
+### App Launcher Icon (Google Design Language)
+- **Design Philosophy**: Perfectly aligns with Google's native app icon aesthetic on Google Pixel devices (similar to Google Authenticator, Google Drive, Google Files, and Google Play Protect). Replaces dark cyber-antivirus badge styling with a clean, friendly, native system utility presence.
+- **Adaptive Canvas**: 108dp x 108dp viewport with 72dp safe zone (`safe circle radius = 33dp` centered at `54, 54`), immune to cropping across all launcher masks (Circle, Squircle, Rounded Square, Pebble).
+- **Background Layer (`ic_launcher_background.xml`)**: Solid `#FFFFFF` pure white adaptive canvas.
+- **Foreground Layer (`ic_launcher_foreground.xml`)**:
+  - *Shield Geometry*: Smooth rounded geometric security crest divided into 4 flowing Google brand quadrants:
+    - *Top-Left*: Google Blue (`#4285F4`)
+    - *Top-Right*: Google Red (`#EA4335`)
+    - *Bottom-Right*: Google Yellow (`#FBBC05`)
+    - *Bottom-Left*: Google Green (`#34A853`)
+  - *Center Padlock Cutout*: Pure white negative-space cutout unified body (21.5dp x 15.5dp, `rx = 3.5dp`) and arched shackle (stroke width 4dp, radius 8.5dp) carved cleanly through the center of the shield, letting the white canvas breathe through.
+  - *Shackle Arch Windows*: Shield colors (Blue left, Red right) visible through the inner loop opening.
+  - *Keyhole*: Crisp Google Material Blue (`#1A73E8`) aperture centered in the lock body.
+- **Monochrome Themed Icon (`ic_launcher_monochrome.xml`)**: Single solid `#FFFFFF` vector path utilizing `android:fillType="evenOdd"` to cleanly carve out the padlock silhouette and fill the keyhole, providing flawless dynamic Monet wallpaper theming on Android 13-17 Pixel Launcher.
+
 ## Do Not
 - **Do NOT** use hardcoded non-theme colors for backgrounds or text.
 - **Do NOT** use square (0dp radius) buttons or harsh rectangular cards.
