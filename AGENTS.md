@@ -67,6 +67,9 @@ adb shell am start -n com.pixelguard.applock/.ui.main.MainActivity
 # Compile debug APK
 .\gradlew.bat assembleDebug
 
+# Compile production release APK (ALWAYS used for device deployment)
+.\gradlew.bat assembleRelease
+
 # Check lint and syntax
 .\gradlew.bat lintDebug
 ```
@@ -116,13 +119,14 @@ adb shell am start -n com.pixelguard.applock/.ui.main.MainActivity
 
 ## Verification Checklist
 Before completing any task:
-1. Run `.\gradlew.bat assembleDebug` and verify exit code 0.
+1. Run `.\gradlew.bat assembleRelease` (or `assembleDebug` for fast unit verification) and verify exit code 0.
 2. Check that no main-thread disk or bitmap rasterization was introduced into `@Composable` scopes.
-3. Deploy and test on the connected Pixel 9 with `adb install -r -d`.
+3. Deploy and test on the connected Pixel 9 with `adb install -r -d "app\build\outputs\apk\release\app-release.apk"` (ALWAYS install Production/Release build per user mandate).
 4. **MANDATORY**: Update relevant documentation files (`docs/DESIGN.md`, `docs/DECISIONS.md`, `docs/MEMORY.md`, `docs/RULES.md`, `docs/TESTING.md`) immediately in the SAME turn whenever any UI, code, architectural, or configuration changes occur.
 5. **Ephemeral File Cleanup**: Always remove temporary files and folders once work is completed (e.g. adb screencaps `*.png`, XML UI hierarchy dumps `ui.xml`, scratch logs, or test dumps). Never leave ephemeral files cluttering the repository root.
 
 ## Forbidden Changes
+- **DO NOT** deploy debug builds (`app-debug.apk`) to physical devices; ALWAYS deploy production release builds (`app-release.apk`).
 - **DO NOT** complete turns or tasks without immediately updating project documentation (`docs/DESIGN.md`, `docs/DECISIONS.md`, `docs/MEMORY.md`).
 - **DO NOT** leave temporary debug files, screencaps, or UI dumps in the workspace after work is completed.
 - **DO NOT** replace `AccessibilityService` with background polling timers (`UsageStatsManager` polling loops).

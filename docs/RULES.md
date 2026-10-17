@@ -77,7 +77,11 @@
 - **Lazy Recycling**: Provide `key` and `contentType` parameters in all `LazyColumn` implementations.
 - **Memoization**: Memoize complex counts or filtered sub-lists with `remember(allApps)` to avoid repeated list iterations during scroll.
 
+## Deployment & Build Rules
+- **Always Install Production (Release) Build**: Always compile and install the release build (`assembleRelease` -> `app-release.apk`) to target devices. Never deploy debug builds unless explicitly instructed by the user.
+
 ## Forbidden Practices
+- **DO NOT** deploy debug builds (`app-debug.apk`) to physical devices; always build and deploy production release builds (`app-release.apk`).
 - **DO NOT** leave temporary debug files, screencaps, or UI dumps in the workspace after work is completed.
 - **DO NOT** use `DEVICE_CREDENTIAL` in `BiometricPrompt.PromptInfo`.
 - **DO NOT** execute `app.icon.toBitmap()` synchronously inside `@Composable` functions.

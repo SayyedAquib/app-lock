@@ -975,4 +975,26 @@ Implement remediation across all 7 findings:
 - 100% test pass rate across all 123 automated tests (73 Unit & Service + 50 Compose UI).
 - Zero data loss for existing users via automated encrypted log migration.
 
+---
+
+## ADR 032: Mandatory Production (Release) Build Deployment Architecture
+### Date
+2026-10-17
+### Status
+Accepted
+### Context
+Deploying debug builds (`app-debug.apk`) to physical user devices leaves the application in an unoptimized, debuggable state (`android:debuggable="true"`), introduces overhead from non-minified bytecode (~66 MB), leaves internal debug logging active, and bypasses R8 / ProGuard verification during testing. The user mandated that all physical device installations must always be Production (Release) builds.
+### Options Considered
+1. Continue deploying debug builds for fast turnaround and only compile release builds on request. (Rejected: violates user mandate).
+2. Mandate Production (Release) builds (`assembleRelease` -> `app-release.apk`) for all physical device testing and sideloading, while preserving `assembleDebug` strictly for headless local unit tests. (Adopted).
+### Decision
+Enforce Production (Release) builds for all on-device ADB deployments:
+1. All physical device deployments run `.\gradlew.bat assembleRelease` followed by `adb install -r -d "app\build\outputs\apk\release\app-release.apk"`.
+2. Release configuration applies full R8 optimization, resource shrinking (`isShrinkResources = true`), dead-code elimination, and removes the `DEBUGGABLE` flag, shrinking the APK by 94.6% (from 66.1 MB down to 3.56 MB).
+3. Hardened `AGENTS.md` and `docs/RULES.md` to forbid deploying debug builds to physical devices.
+### Consequences
+- Testing on physical hardware (Pixel 9) matches real-world production performance, 120Hz display pacing, and security postures.
+- Guarantees R8 / ProGuard rules (`proguard-rules.pro`) are continuously exercised, catching obfuscation bugs or missing keep rules before release.
+- Dramatically faster ADB streaming transfer times due to the 3.56 MB package size.
+
 

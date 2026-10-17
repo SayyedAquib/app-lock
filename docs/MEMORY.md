@@ -205,6 +205,11 @@
       - **SEC-007 (Titan M2 StrongBox KeyStore Backing)**: Enabled `setIsStrongBoxBacked(true)` in `CryptoManager.createKey()` with automatic TEE fallback.
     - Verified all **123 automated tests** passing with exit code 0 (`BUILD SUCCESSFUL`).
     - Successfully compiled debug APK with AAPT2 and DEX shrinking.
+43. **Mandatory Production (Release) Deployment Policy & R8 Optimization (ADR 032)**:
+    - **User Mandate**: Codified project-wide policy requiring all on-device deployments to be **Production (Release) Builds** (`assembleRelease` -> `app-release.apk`) rather than debug builds.
+    - **Optimization Profile**: Release build activates full R8 / ProGuard minification, resource shrinking, dead code stripping, and removes `DEBUGGABLE` flags, reducing APK size by **94.6%** (from 66.1 MB down to 3.56 MB).
+    - **Governance Updates**: Updated `AGENTS.md` (Build Commands, Verification Checklist, Forbidden Changes) and `docs/RULES.md` (Deployment & Build Rules, Forbidden Practices).
+    - **Deployment & Verification**: Successfully built `app-release.apk` with R8 (`BUILD SUCCESSFUL in 9m 41s`), installed to Google Pixel 9 via `adb install -r -d`, launched `MainActivity`, and verified non-debuggable flags (`flags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ]`).
 
 ## Known Problems
 - None in active runtime. On Android 17, initial sideloading requires the user to tap "Allow restricted settings" in App Info for Accessibility Service toggle activation (interactive guidance provided in Onboarding).
@@ -233,6 +238,8 @@
 - Decided on Repository Context Hygiene & Antigravity Ignore Configuration (ADR 028).
 - Decided on Mandatory Ephemeral Artifact Cleanup & Workspace Hygiene (ADR 029).
 - Decided on Google 4-Color Brand Palette, Clean White Canvas & Negative-Space Padlock Cutout (ADR 030).
+- Decided on OWASP Mobile Full-Stack Security Hardening & Remediation (ADR 031).
+- Decided on Mandatory Production (Release) Build Deployment Architecture (ADR 032).
 
 ## Next Steps
 - Explore Roadmap feature: Calculator / Notes Stealth Disguise mode.
