@@ -81,8 +81,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.sp
 import com.pixelguard.applock.ui.main.MainViewModel
+import com.pixelguard.applock.ui.theme.semanticColors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -156,12 +156,12 @@ fun SettingsScreen(
                 shape = RoundedCornerShape(18.dp),
                 border = BorderStroke(
                     1.dp,
-                    if (hasSecurityVulnerability) Color(0xFFF9AB00).copy(alpha = 0.35f)
+                    if (hasSecurityVulnerability) MaterialTheme.semanticColors.amber.copy(alpha = 0.35f)
                     else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
                 ),
                 colors = CardDefaults.cardColors(
                     containerColor = if (hasSecurityVulnerability)
-                        Color(0xFFF9AB00).copy(alpha = 0.14f)
+                        MaterialTheme.semanticColors.amberContainer.copy(alpha = 0.28f)
                     else
                         MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.40f)
                 )
@@ -175,14 +175,14 @@ fun SettingsScreen(
                             .size(48.dp)
                             .clip(CircleShape)
                             .background(
-                                if (hasSecurityVulnerability) Color(0xFFF9AB00) else MaterialTheme.colorScheme.primary
+                                if (hasSecurityVulnerability) MaterialTheme.semanticColors.amber else MaterialTheme.colorScheme.primary
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = if (hasSecurityVulnerability) Icons.Default.WarningAmber else Icons.Default.Shield,
                             contentDescription = null,
-                            tint = if (hasSecurityVulnerability) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                            tint = if (hasSecurityVulnerability) MaterialTheme.semanticColors.onAmber else MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(26.dp)
                         )
                     }
@@ -226,8 +226,8 @@ fun SettingsScreen(
                                     viewModel.armRecommendedShields()
                                 },
                                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFFF9AB00),
-                                    contentColor = Color.Black
+                                    containerColor = MaterialTheme.semanticColors.amber,
+                                    contentColor = MaterialTheme.semanticColors.onAmber
                                 ),
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier

@@ -123,6 +123,7 @@ import androidx.core.graphics.drawable.toBitmap
 import com.pixelguard.applock.data.model.AppCategory
 import com.pixelguard.applock.data.model.AppItem
 import com.pixelguard.applock.data.model.AppSortOrder
+import com.pixelguard.applock.ui.theme.semanticColors
 import com.pixelguard.applock.ui.common.HapticManager
 import org.json.JSONObject
 
@@ -1067,9 +1068,10 @@ fun SecurityHealthGaugeCard(
         label = "gauge_angle"
     )
 
+    val amberColor = MaterialTheme.semanticColors.amber
     val gaugeColor = when {
         securityPercentage >= 80 -> MaterialTheme.colorScheme.primary
-        securityPercentage >= 40 -> Color(0xFFF9AB00)
+        securityPercentage >= 40 -> amberColor
         else -> MaterialTheme.colorScheme.error
     }
 
@@ -1158,7 +1160,7 @@ fun SecurityHealthGaugeCard(
                         Icon(
                             imageVector = Icons.Default.WarningAmber,
                             contentDescription = null,
-                            tint = Color(0xFFF9AB00),
+                            tint = amberColor,
                             modifier = Modifier.size(13.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -1166,7 +1168,7 @@ fun SecurityHealthGaugeCard(
                             text = "$unprotectedSensitiveCount critical at risk",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFFF9AB00)
+                            color = amberColor
                         )
                     }
                 } else if (lockedCount > 0) {

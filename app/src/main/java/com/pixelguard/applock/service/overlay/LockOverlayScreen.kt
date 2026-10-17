@@ -157,9 +157,11 @@ fun LockOverlayScreen(
     }
 
     val overlayColorScheme = remember(brandColor) {
+        val lum = (0.2126f * brandColor.red + 0.7152f * brandColor.green + 0.0722f * brandColor.blue)
+        val onPrimaryColor = if (lum > 0.45f) Color(0xFF000000) else Color(0xFFFFFFFF)
         darkColorScheme(
             primary = brandColor,
-            onPrimary = Color(0xFF000000),
+            onPrimary = onPrimaryColor,
             surface = Color(0xFF101418),
             onSurface = Color(0xFFE2E2E6),
             surfaceVariant = Color(0xFF282F37),

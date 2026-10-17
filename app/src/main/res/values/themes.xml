@@ -3,7 +3,7 @@
     <style name="Theme.PixelAppLock" parent="android:Theme.Material.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowBackground">#FF0F141A</item>
+        <item name="android:windowBackground">#FFFFFFFF</item>
     </style>
 
     <style name="Theme.PixelAppLock.LockOverlay" parent="Theme.PixelAppLock">

@@ -121,7 +121,7 @@ class LockActivity : FragmentActivity() {
             }
             val effectiveAnimations = prefs.isAnimationsEnabled && systemAnimationsEnabled
 
-            PixelAppLockTheme {
+            PixelAppLockTheme(darkTheme = true) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

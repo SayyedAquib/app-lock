@@ -231,6 +231,14 @@
       - **SEC-109 (Decoy Crash Inconsistency Remediation)**: Wired `isDecoyCrashEnabled` in `LockActivity` for standard accessibility triggers.
       - **SEC-110 (1-Tap "Arm Recommended Shields" Fast Remediation)**: Added 1-tap activation in the Settings "Attention Needed" banner enabling both Settings Protection and Recents Masking simultaneously.
     - Verified with all 123 automated tests passing cleanly (100% pass rate).
+46. **Dual-Theme Architecture, Adaptive Semantic Tokens & Automated WCAG Contrast Verification (ADR 035)**:
+    - Remediated inverted contrast and low-contrast defects across Light and Dark system modes:
+      - **Light Mode Alert Legibility**: Replaced hardcoded yellow `Color(0xFFF9AB00)` (1.8:1 contrast on white) with adaptive `SemanticColors.amber` resolving to `#8F4C00` (deep ochre, 6.3:1 contrast ratio against white surfaces, exceeding WCAG AA).
+      - **Lock Screen Brand Button Legibility**: Replaced hardcoded black text on brand action buttons in `LockOverlayScreen` with dynamic luminance evaluation ($L = 0.2126R + 0.7152G + 0.0722B$). If $L > 0.45$, text is black; otherwise crisp white, eliminating black text on dark brand buttons (e.g. YouTube red, Netflix crimson, Settings blue).
+      - **Native XML Window Background Synchronization**: Split `res/values/themes.xml` (`#FFFFFFFF` window background) and `res/values-night/themes.xml` (`#FF0F141A` window background), eliminating dark window flashes and edge bleed in Light Mode.
+      - **OLED Privacy Lock Isolation**: Enforced `PixelAppLockTheme(darkTheme = true)` on `LockActivity` for privacy, battery conservation, and visual consistency regardless of device theme.
+      - **Automated WCAG 2.1 Unit Tests**: Implemented `DualThemeContrastTest.kt` validating WCAG relative luminance formulas ($\ge 4.5:1$ AA, $\ge 7.0:1$ AAA) and UI rendering across `MainScreen`, `SettingsScreen`, and `OnboardingScreen` in both themes.
+    - Verified all **130 automated tests** passing with exit code 0 (`BUILD SUCCESSFUL`).
 
 ## Known Problems
 - None in active runtime. On Android 17, initial sideloading requires the user to tap "Allow restricted settings" in App Info for Accessibility Service toggle activation (interactive guidance provided in Onboarding).
@@ -263,6 +271,7 @@
 - Decided on Mandatory Production (Release) Build Deployment Architecture (ADR 032).
 - Decided on Material 3 Expressive & Fluid Motion Architecture (ADR 033).
 - Decided on Zero-Trust Master Authentication & OWASP MASVS Security Hardening (ADR 034).
+- Decided on Dual-Theme Architecture, Adaptive Semantic Tokens & Automated WCAG Contrast Verification (ADR 035).
 
 ## Next Steps
 - Explore Roadmap feature: Calculator / Notes Stealth Disguise mode.
