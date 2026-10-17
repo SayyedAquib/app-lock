@@ -211,6 +211,14 @@
     - **Build Performance Tuning**: Tuned `gradle.properties` (`-Xmx4096m -XX:+UseParallelGC`, `org.gradle.parallel=true`, `org.gradle.caching=true`), reducing subsequent release compile times from 9m 41s (cold) down to **24s** (warm cached). Actual on-device streaming install (`adb install`) takes only ~12s.
     - **Governance Updates**: Updated `AGENTS.md` (Build Commands, Verification Checklist, Forbidden Changes) and `docs/RULES.md` (Deployment & Build Rules, Forbidden Practices).
     - **Deployment & Verification**: Successfully built `app-release.apk` with R8, installed to Google Pixel 9 via `adb install -r -d`, launched `MainActivity`, and verified non-debuggable flags (`flags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ]`).
+44. **Material 3 Expressive & Fluid Motion Architecture (ADR 033)**:
+    - Executed comprehensive single-sweep UI/UX elevation across all 4 key surfaces:
+      - **Lock Screen & Interception Overlay**: Hardware-accelerated `Modifier.blur(24.dp)` backdrop over OLED black (`#000000`), dynamic ambient aura pulsing behind app icons, liquid ripple PIN dots with individual scale bloom (`1.28f` to `1.0f`) and bouncy spring damping, elastic keypad shape-morphing (`0.88f` compression on press via `MutableInteractionSource`), and unlock success burst state (`isUnlocked = true` triggering glowing checkmark burst).
+      - **Main Dashboard & App List**: Material 3 non-destructive `SwipeToDismissBox` (swipe right to toggle lock/unlock, swipe left to configure per-app grace period sheet; auto-rebounds to settled state), spring shackle rotation (`-14f` to `0f`) on lock toggle, and spring overshoot bounce on circular security health percentage.
+      - **Settings Hub & Schedule Visualizer**: High-precision 24-hour circular day/night dial (`Canvas` with `drawArc` and animated sweep angle) rendering active lockdown hours, duration badge, and start/end time indicators.
+      - **Intruder Logs Evidence Viewer**: Pinch-to-zoom multi-touch gesture scaling (`detectTransformGestures` supporting up to 3.5x magnification) and fluid two-finger panning in photo preview modal, accompanied by contextual incident badges.
+    - Verified with all 123 automated unit and Compose UI tests passing (100% pass rate).
+    - Compiled optimized production release APK with full R8 shrinking and deployed directly to Google Pixel 9 via ADB.
 
 ## Known Problems
 - None in active runtime. On Android 17, initial sideloading requires the user to tap "Allow restricted settings" in App Info for Accessibility Service toggle activation (interactive guidance provided in Onboarding).
@@ -241,6 +249,7 @@
 - Decided on Google 4-Color Brand Palette, Clean White Canvas & Negative-Space Padlock Cutout (ADR 030).
 - Decided on OWASP Mobile Full-Stack Security Hardening & Remediation (ADR 031).
 - Decided on Mandatory Production (Release) Build Deployment Architecture (ADR 032).
+- Decided on Material 3 Expressive & Fluid Motion Architecture (ADR 033).
 
 ## Next Steps
 - Explore Roadmap feature: Calculator / Notes Stealth Disguise mode.
@@ -252,5 +261,5 @@
 - Always use `BypassSandbox: true` when running Gradle builds or ADB commands.
 
 ## Session Handoff
-- Repository has been fully audited and sanitized for GitHub push: local developer batch scripts, SDK paths, local caches, and temporary debug captures are strictly excluded via `.gitignore` and `.antigravityignore`. Private IP addresses and device serials have been stripped from documentation. All 122 automated tests (72 Unit & Service + 50 Compose UI) are passing (100% pass rate). The codebase is clean, secure, and ready for git commit and push.
+- Repository has been fully audited and sanitized for GitHub push: local developer batch scripts, SDK paths, local caches, and temporary debug captures are strictly excluded via `.gitignore` and `.antigravityignore`. Private IP addresses and device serials have been stripped from documentation. All 123 automated tests (73 Unit & Service + 50 Compose UI) are passing (100% pass rate). The codebase is clean, secure, and ready for git commit and push.
 

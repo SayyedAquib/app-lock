@@ -2,6 +2,7 @@ package com.pixelguard.applock.ui.main
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -87,6 +88,9 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import com.pixelguard.applock.data.model.isPinOnly
@@ -1056,7 +1060,10 @@ fun SecurityHealthGaugeCard(
 
     val animatedAngle by animateFloatAsState(
         targetValue = securityPercentage * 3.6f,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
         label = "gauge_angle"
     )
 
@@ -1253,6 +1260,7 @@ fun SecurityHealthGaugeCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppListItem(
     app: AppItem,
@@ -1269,157 +1277,248 @@ fun AppListItem(
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "shackle_offset"
     )
+    val shackleRotation by animateFloatAsState(
+        targetValue = if (app.isLocked) 0f else -14f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "shackle_rotation"
+    )
     val lockScale by animateFloatAsState(
-        targetValue = if (app.isLocked) 1.0f else 0.92f,
+        targetValue = if (app.isLocked) 1.05f else 0.92f,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "lock_scale"
     )
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onOpenProfile() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (app.isLocked)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.24f)
-            else
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.32f)
-        ),
-        border = if (app.isLocked)
-            BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.22f))
-        else null
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 14.dp, vertical = 10.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // App Icon
-            if (app.iconBitmap != null) {
-                Image(
-                    bitmap = app.iconBitmap.asImageBitmap(),
-                    contentDescription = app.appName,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                )
-            } else if (app.icon != null) {
-                val bitmap = remember(app.icon) { app.icon.toBitmap() }
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = app.appName,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            when (value) {
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    onToggle()
+                    false
                 }
+                SwipeToDismissBoxValue.EndToStart -> {
+                    onOpenProfile()
+                    false
+                }
+                SwipeToDismissBoxValue.Settled -> false
             }
+        }
+    )
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = app.appName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = app.category.displayName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = true,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            val direction = dismissState.dismissDirection
+            val alignment = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                else -> Alignment.Center
             }
+            val bgColor by animateColorAsState(
+                targetValue = when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd -> if (app.isLocked) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
+                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.28f)
+                    else -> Color.Transparent
+                },
+                label = "swipe_bg"
+            )
 
-            // Status indicators when app is locked
-            if (app.isLocked) {
-                val graceBadge = when (appGraceSeconds) {
-                    null -> "Default"
-                    0 -> "0s"
-                    30 -> "30s"
-                    60 -> "1m"
-                    300 -> "5m"
-                    900 -> "15m"
-                    else -> "${appGraceSeconds}s"
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            if (isPinOnly) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f)
-                            else if (appGraceSeconds != null) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
-                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-                        )
-                        .padding(horizontal = 7.dp, vertical = 3.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (isPinOnly) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(bgColor)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = alignment
+            ) {
+                when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.Key,
-                                contentDescription = "PIN Only",
-                                modifier = Modifier.size(11.dp),
-                                tint = MaterialTheme.colorScheme.tertiary
+                                imageVector = if (app.isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = if (app.isLocked) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
                             )
-                            Spacer(modifier = Modifier.width(3.dp))
-                        } else {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (app.isLocked) "Unlock" else "Lock",
+                                fontWeight = FontWeight.Bold,
+                                color = if (app.isLocked) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                    SwipeToDismissBoxValue.EndToStart -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Configure",
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontSize = 13.sp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Icon(
                                 imageVector = Icons.Default.Timer,
-                                contentDescription = "Timeout",
-                                modifier = Modifier.size(11.dp),
-                                tint = if (appGraceSeconds != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(22.dp)
                             )
-                            Spacer(modifier = Modifier.width(3.dp))
                         }
-                        Text(
-                            text = if (isPinOnly && isPerAppGraceEnabled && appGraceSeconds != null) "PIN • $graceBadge ›"
-                                else if (isPinOnly) "PIN ›"
-                                else "$graceBadge ›",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isPinOnly) MaterialTheme.colorScheme.tertiary
-                                else if (appGraceSeconds != null) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.outline
+                    }
+                    else -> {}
+                }
+            }
+        }
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onOpenProfile() },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (app.isLocked)
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.24f)
+                else
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.32f)
+            ),
+            border = if (app.isLocked)
+                BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.22f))
+            else null
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // App Icon
+                if (app.iconBitmap != null) {
+                    Image(
+                        bitmap = app.iconBitmap.asImageBitmap(),
+                        contentDescription = app.appName,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                } else if (app.icon != null) {
+                    val bitmap = remember(app.icon) { app.icon.toBitmap() }
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = app.appName,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(6.dp))
-            }
 
-            IconButton(
-                onClick = onToggle,
-                modifier = Modifier.size(44.dp)
-            ) {
-                Icon(
-                    imageVector = if (app.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                    contentDescription = if (app.isLocked) "Locked" else "Unlocked",
-                    tint = if (app.isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                    modifier = if (isAnimationsEnabled) {
-                        Modifier
-                            .offset(y = shackleOffset)
-                            .graphicsLayer {
-                                scaleX = lockScale
-                                scaleY = lockScale
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = app.appName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = app.category.displayName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Status indicators when app is locked
+                if (app.isLocked) {
+                    val graceBadge = when (appGraceSeconds) {
+                        null -> "Default"
+                        0 -> "0s"
+                        30 -> "30s"
+                        60 -> "1m"
+                        300 -> "5m"
+                        900 -> "15m"
+                        else -> "${appGraceSeconds}s"
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isPinOnly) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f)
+                                else if (appGraceSeconds != null) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                            )
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isPinOnly) {
+                                Icon(
+                                    imageVector = Icons.Default.Key,
+                                    contentDescription = "PIN Only",
+                                    modifier = Modifier.size(11.dp),
+                                    tint = MaterialTheme.colorScheme.tertiary
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Timer,
+                                    contentDescription = "Timeout",
+                                    modifier = Modifier.size(11.dp),
+                                    tint = if (appGraceSeconds != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
                             }
-                    } else Modifier
-                )
+                            Text(
+                                text = if (isPinOnly && isPerAppGraceEnabled && appGraceSeconds != null) "PIN • $graceBadge ›"
+                                    else if (isPinOnly) "PIN ›"
+                                    else "$graceBadge ›",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isPinOnly) MaterialTheme.colorScheme.tertiary
+                                    else if (appGraceSeconds != null) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outline
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+
+                IconButton(
+                    onClick = onToggle,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Icon(
+                        imageVector = if (app.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                        contentDescription = if (app.isLocked) "Locked" else "Unlocked",
+                        tint = if (app.isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                        modifier = if (isAnimationsEnabled) {
+                            Modifier
+                                .offset(y = shackleOffset)
+                                .graphicsLayer {
+                                    scaleX = lockScale
+                                    scaleY = lockScale
+                                    rotationZ = shackleRotation
+                                }
+                        } else Modifier
+                    )
+                }
             }
         }
     }

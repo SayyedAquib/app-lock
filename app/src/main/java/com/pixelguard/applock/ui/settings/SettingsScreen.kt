@@ -1,8 +1,14 @@
 package com.pixelguard.applock.ui.settings
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
@@ -820,6 +826,89 @@ fun ScheduleSheetContent(
             Column {
                 Text(text = "Night Lockdown Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(text = "Forces instant 0-second relocking during sleep hours", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+
+        // 24-Hour Circular Day/Night Arc Visualizer
+        val durationHours = remember(startHour, endHour) {
+            if (endHour >= startHour) endHour - startHour
+            else (24 - startHour) + endHour
+        }
+        val trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        val nightTint = MaterialTheme.colorScheme.tertiary
+        val sweepAngleTarget = (durationHours / 24f) * 360f
+        val animatedSweep by animateFloatAsState(
+            targetValue = sweepAngleTarget,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+            label = "schedule_sweep"
+        )
+        val startAngle = -90f + (startHour / 24f) * 360f
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier.size(72.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Canvas(modifier = Modifier.size(72.dp)) {
+                        val stroke = 7.dp.toPx()
+                        drawArc(
+                            color = trackColor,
+                            startAngle = -90f,
+                            sweepAngle = 360f,
+                            useCenter = false,
+                            style = Stroke(width = stroke, cap = StrokeCap.Round)
+                        )
+                        drawArc(
+                            color = nightTint,
+                            startAngle = startAngle,
+                            sweepAngle = animatedSweep,
+                            useCenter = false,
+                            style = Stroke(width = stroke, cap = StrokeCap.Round)
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.Bedtime,
+                        contentDescription = null,
+                        tint = nightTint,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "$durationHours Hours Lockdown",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${formatHour(startHour)} → ${formatHour(endHour)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = nightTint
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Instant 0s relock enforced every night",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 

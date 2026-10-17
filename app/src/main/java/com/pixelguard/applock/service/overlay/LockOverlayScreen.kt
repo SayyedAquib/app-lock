@@ -18,7 +18,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +38,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Warning
@@ -98,6 +102,7 @@ fun LockOverlayScreen(
     var pinInput by remember { mutableStateOf("") }
     var currentLockout by remember { mutableStateOf(lockoutSecondsProvider()) }
     var attemptsUntilLockout by remember { mutableStateOf(attemptsUntilLockoutProvider()) }
+    var isUnlocked by remember { mutableStateOf(false) }
     val isKeypadDisabled = currentLockout > 0
     val shakeOffset = remember { Animatable(0f) }
     val dotErrorAnim = remember { Animatable(0f) }
@@ -179,6 +184,21 @@ fun LockOverlayScreen(
                 .fillMaxSize()
                 .background(backgroundBrush)
         ) {
+            // Real-time Hardware-Accelerated Frosted Glass Backdrop
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(24.dp)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                brandColor.copy(alpha = 0.26f),
+                                Color.Transparent
+                            ),
+                            radius = 700f
+                        )
+                    )
+            )
         if (showDecoy) {
             // Decoy Fake Crash Dialog
             Box(
@@ -260,34 +280,68 @@ fun LockOverlayScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(top = 16.dp)
                 ) {
-                    // Ambient Biometric Pulse Aura
+                    // Dynamic Ambient Aura with Radial Glow & Pulse
                     Box(contentAlignment = Alignment.Center) {
+                        // Ambient Radial Glow
+                        Box(
+                            modifier = Modifier
+                                .size(140.dp)
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            (if (isUnlocked) Color(0xFF34A853) else brandColor).copy(alpha = 0.40f * pulseAlpha),
+                                            (if (isUnlocked) Color(0xFF34A853) else brandColor).copy(alpha = 0.12f * pulseAlpha),
+                                            Color.Transparent
+                                        ),
+                                        radius = 200f
+                                    ),
+                                    shape = CircleShape
+                                )
+                        )
+
                         if (isAnimationsEnabled) {
                             // Outer glowing ring
                             Box(
                                 modifier = Modifier
-                                    .size((88 * pulseScale).dp)
+                                    .size((92 * pulseScale).dp)
                                     .clip(CircleShape)
-                                    .background(brandColor.copy(alpha = pulseAlpha * 0.22f))
+                                    .background((if (isUnlocked) Color(0xFF34A853) else brandColor).copy(alpha = pulseAlpha * 0.24f))
                             )
                             // Inner glowing ring
                             Box(
                                 modifier = Modifier
-                                    .size((78 * pulseScale).dp)
+                                    .size((80 * pulseScale).dp)
                                     .clip(CircleShape)
-                                    .background(brandColor.copy(alpha = pulseAlpha * 0.38f))
+                                    .background((if (isUnlocked) Color(0xFF34A853) else brandColor).copy(alpha = pulseAlpha * 0.38f))
                             )
                         }
+
+                        val unlockBurstScale by animateFloatAsState(
+                            targetValue = if (isUnlocked) 1.25f else 1.0f,
+                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                            label = "unlock_burst_scale"
+                        )
 
                         // Center Lock / App Icon
                         Box(
                             modifier = Modifier
                                 .size(72.dp)
+                                .graphicsLayer {
+                                    scaleX = unlockBurstScale
+                                    scaleY = unlockBurstScale
+                                }
                                 .clip(CircleShape)
-                                .background(brandColor.copy(alpha = 0.22f)),
+                                .background((if (isUnlocked) Color(0xFF34A853) else brandColor).copy(alpha = if (isUnlocked) 0.35f else 0.22f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (targetIcon != null) {
+                            if (isUnlocked) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Unlocked",
+                                    tint = Color(0xFF34A853),
+                                    modifier = Modifier.size(38.dp)
+                                )
+                            } else if (targetIcon != null) {
                                 val bitmap = remember(targetIcon) {
                                     try {
                                         targetIcon.toBitmap(120, 120)
@@ -405,7 +459,7 @@ fun LockOverlayScreen(
                             }
                         }
 
-                        // PIN Dots with Shake, Error Morph and Spring-Loaded Bounce
+                        // PIN Dots with Shake, Error Morph and Spring-Loaded Bounce & Liquid Ripple
                         val errorRed = MaterialTheme.colorScheme.error
                         val activeDotColor = lerp(brandColor, errorRed, dotErrorAnim.value)
                         val activeAlpha = dotFadeAnim.value
@@ -429,31 +483,55 @@ fun LockOverlayScreen(
                                     },
                                     label = "pin_dot_bounce_$index"
                                 )
+                                val rippleScale by animateFloatAsState(
+                                    targetValue = if (isFilled) 1.6f else 1.0f,
+                                    animationSpec = if (isAnimationsEnabled) spring(stiffness = Spring.StiffnessLow) else snap(),
+                                    label = "pin_dot_ripple_$index"
+                                )
 
                                 Box(
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .graphicsLayer {
-                                            scaleX = dotScale
-                                            scaleY = dotScale
-                                            alpha = activeAlpha
-                                        }
-                                        .clip(CircleShape)
-                                        .background(
-                                            if (isFilled) activeDotColor
-                                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f * activeAlpha)
+                                    modifier = Modifier.size(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isFilled && isAnimationsEnabled) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(16.dp)
+                                                .graphicsLayer {
+                                                    scaleX = rippleScale
+                                                    scaleY = rippleScale
+                                                    alpha = (0.35f * activeAlpha).coerceIn(0f, 1f)
+                                                }
+                                                .clip(CircleShape)
+                                                .background(activeDotColor)
                                         )
-                                        .then(
-                                            if (!isFilled) Modifier.border(1.dp, activeDotColor.copy(alpha = 0.4f * activeAlpha), CircleShape)
-                                            else Modifier
-                                        )
-                                )
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .graphicsLayer {
+                                                scaleX = dotScale
+                                                scaleY = dotScale
+                                                alpha = activeAlpha
+                                            }
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (isFilled) activeDotColor
+                                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f * activeAlpha)
+                                            )
+                                            .then(
+                                                if (!isFilled) Modifier.border(1.dp, activeDotColor.copy(alpha = 0.4f * activeAlpha), CircleShape)
+                                                else Modifier
+                                            )
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                // Glassmorphic Numeric Keypad
+                // Glassmorphic Numeric Keypad with Elastic Shape-Morphing
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -482,17 +560,31 @@ fun LockOverlayScreen(
                             for (item in row) {
                                 when (item) {
                                     "bio" -> {
+                                        val bioInteraction = remember { MutableInteractionSource() }
+                                        val isBioPressed by bioInteraction.collectIsPressedAsState()
+                                        val bioScale by animateFloatAsState(
+                                            targetValue = if (isBioPressed && isAnimationsEnabled) 0.88f else 1.0f,
+                                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                                            label = "bio_scale"
+                                        )
+
                                         IconButton(
                                             onClick = {
+                                                isUnlocked = true
                                                 hapticManager.tapClick(isHapticsEnabled)
                                                 onUnlockSuccess()
                                             },
+                                            interactionSource = bioInteraction,
                                             modifier = Modifier
                                                 .size(72.dp)
+                                                .graphicsLayer {
+                                                    scaleX = bioScale
+                                                    scaleY = bioScale
+                                                }
                                                 .clip(CircleShape)
                                                 .background(
                                                     if (isBiometricEnabled) MaterialTheme.colorScheme.surfaceVariant.copy(
-                                                        alpha = if (isKeypadDisabled) 0.18f else 0.42f
+                                                        alpha = if (isKeypadDisabled) 0.18f else if (isBioPressed) 0.65f else 0.42f
                                                     )
                                                     else Color.Transparent
                                                 )
@@ -508,6 +600,14 @@ fun LockOverlayScreen(
                                         }
                                     }
                                     "del" -> {
+                                        val delInteraction = remember { MutableInteractionSource() }
+                                        val isDelPressed by delInteraction.collectIsPressedAsState()
+                                        val delScale by animateFloatAsState(
+                                            targetValue = if (isDelPressed && isAnimationsEnabled) 0.88f else 1.0f,
+                                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                                            label = "del_scale"
+                                        )
+
                                         IconButton(
                                             onClick = {
                                                 if (isKeypadDisabled) {
@@ -520,13 +620,18 @@ fun LockOverlayScreen(
                                                 }
                                             },
                                             enabled = !isKeypadDisabled,
+                                            interactionSource = delInteraction,
                                             modifier = Modifier
                                                 .semantics { contentDescription = "Delete" }
                                                 .size(72.dp)
+                                                .graphicsLayer {
+                                                    scaleX = delScale
+                                                    scaleY = delScale
+                                                }
                                                 .clip(CircleShape)
                                                 .background(
                                                     MaterialTheme.colorScheme.surfaceVariant.copy(
-                                                        alpha = if (isKeypadDisabled) 0.18f else 0.45f
+                                                        alpha = if (isKeypadDisabled) 0.18f else if (isDelPressed) 0.65f else 0.45f
                                                     )
                                                 )
                                         ) {
@@ -539,16 +644,32 @@ fun LockOverlayScreen(
                                         }
                                     }
                                     else -> {
+                                        val digitInteraction = remember { MutableInteractionSource() }
+                                        val isDigitPressed by digitInteraction.collectIsPressedAsState()
+                                        val digitScale by animateFloatAsState(
+                                            targetValue = if (isDigitPressed && isAnimationsEnabled) 0.88f else 1.0f,
+                                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                                            label = "digit_scale_$item"
+                                        )
+
                                         Box(
                                             modifier = Modifier
                                                 .size(72.dp)
+                                                .graphicsLayer {
+                                                    scaleX = digitScale
+                                                    scaleY = digitScale
+                                                }
                                                 .clip(CircleShape)
                                                 .background(
                                                     MaterialTheme.colorScheme.surfaceVariant.copy(
-                                                        alpha = if (isKeypadDisabled) 0.18f else 0.42f
+                                                        alpha = if (isKeypadDisabled) 0.18f else if (isDigitPressed) 0.68f else 0.42f
                                                     )
                                                 )
-                                                .clickable(enabled = !isKeypadDisabled) {
+                                                .clickable(
+                                                    interactionSource = digitInteraction,
+                                                    indication = null,
+                                                    enabled = !isKeypadDisabled
+                                                ) {
                                                     hapticManager.keypadTick(isHapticsEnabled)
                                                     if (pinInput.length < 4) {
                                                         val updated = pinInput + item

@@ -125,7 +125,18 @@ Standard 4dp/8dp grid system:
 - **Lockout Penalty Indicator**: Sleek `LinearProgressIndicator` drain bar showing elapsed lockout penalty time directly under lockout countdown typography.
 - **Permission Warning**: Tinted red/amber container banner (`errorContainer`) with clear setup guidance.
 
-### Animations
+### Animations & Expressive Motion
+- **Frosted Glass Backdrop Blur**: Hardware-accelerated `Modifier.blur(24.dp)` paired with radial ambient gradients over OLED black (`#000000`), generating an ultra-smooth frosted depth layer on Android 13+ platform `RenderEffect`.
+- **Dynamic App Brand Aura**: Soft pulsing radial glow behind target app icon on lock overlay (`scale = 1f` to `1.15f`, `alpha = 0.22f` to `0.45f` with `tween(1600, FastOutSlowInEasing)`), using dominant app color tones.
+- **Liquid Ripple PIN Dots**: Individual spring physics (`Spring.DampingRatioMediumBouncy`, `Spring.StiffnessMediumLow`) triggering a scale bloom (`1.28f` to `1.0f`) on fill, and coordinated 3-stage failure shake and dissolve.
+- **Elastic Keypad Shape-Morphing**: Buttons feature live spring compression (`0.88f` scale on press via `MutableInteractionSource`) with soft shape transformation from rounded square to circle.
+- **Unlock Success Burst**: Morphing checkmark and glowing halo burst state (`isUnlocked = true`) providing instant positive reinforcement before window dismissal.
+- **Swipe-to-Action Gestures**: Non-destructive Material 3 `SwipeToDismissBox` on app list rows:
+  - *Swipe Right*: Toggles lock/unlock with live color morphing and animated lock icons. Row auto-rebounds to settled state.
+  - *Swipe Left*: Opens per-app grace period sheet.
+- **Spring Shackle Bounce**: Upright shackle rotation (`-14f` to `0f`) and scale pulse on toggle.
+- **24-Hour Circular Schedule Dial**: Interactive circular day/night time visualizer (`Canvas` with `drawArc` and animated sweep angle) in the Night Lockdown sheet, rendering active lockdown hours, duration badge, and start/end time indicators.
+- **Pinch-to-Zoom Evidence Viewer**: Hardware-accelerated multi-touch zoom (`detectTransformGestures` supporting 1x to 3.5x magnification) and two-finger panning in the intruder log photo preview dialog.
 - **Physics-Based Springs**: `spring(stiffness = Spring.StiffnessMediumLow)` for lock toggles, shackle bounces, and gauge animations.
 - **Biometric Aura**: Infinite pulsing scale (`1f` to `1.18f`) and alpha (`0.2f` to `0.55f`) with `tween(1200, FastOutSlowInEasing)`.
 - **Refresh Rate**: Guaranteed locked 120Hz smooth scrolling without frame skips.
