@@ -23,4 +23,5 @@ interface AppLockRepository {
     suspend fun addIntruderRecord(record: IntruderRecord)
     suspend fun deleteIntruderRecord(id: String)
     suspend fun clearAllIntruderRecords()
+    suspend fun enableRecommendedShields()
 }

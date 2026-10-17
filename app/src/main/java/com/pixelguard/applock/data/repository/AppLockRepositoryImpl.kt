@@ -274,4 +274,9 @@ class AppLockRepositoryImpl(
         val legacyFile = File(context.filesDir, "intruder_records.json")
         if (legacyFile.exists()) legacyFile.delete()
     }
+
+    override suspend fun enableRecommendedShields() {
+        val current = preferences.first()
+        updatePreferences(current.copy(isSettingsProtected = true, isRecentsMaskingEnabled = true))
+    }
 }

@@ -173,6 +173,16 @@ class MainViewModel(
         }
     }
 
+    suspend fun verifyPin(pin: String): Boolean {
+        return repository.verifyPin(pin)
+    }
+
+    fun armRecommendedShields() {
+        viewModelScope.launch {
+            repository.enableRecommendedShields()
+        }
+    }
+
     fun updatePreferences(newPrefs: LockPreferences) {
         viewModelScope.launch {
             repository.updatePreferences(newPrefs)

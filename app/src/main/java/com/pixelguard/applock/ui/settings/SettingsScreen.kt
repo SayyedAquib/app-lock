@@ -25,7 +25,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bedtime
@@ -215,6 +218,35 @@ fun SettingsScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+
+                        if (hasSecurityVulnerability) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Button(
+                                onClick = {
+                                    viewModel.armRecommendedShields()
+                                },
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFF9AB00),
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(38.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Shield,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Arm Recommended Shields",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -554,6 +586,9 @@ fun SettingsScreen(
                 onSavePin = { pin ->
                     viewModel.setMasterPin(pin)
                     showChangePinSheet = false
+                },
+                onVerifyCurrentPin = { pin ->
+                    viewModel.verifyPin(pin)
                 }
             )
         }
@@ -627,11 +662,15 @@ fun SettingsScreen(
 @Composable
 fun ChangePinSheetContent(
     onDismiss: () -> Unit,
-    onSavePin: (String) -> Unit
+    onSavePin: (String) -> Unit,
+    onVerifyCurrentPin: (suspend (String) -> Boolean)? = null
 ) {
+    var currentPin by remember { mutableStateOf("") }
     var newPin by remember { mutableStateOf("") }
     var confirmPin by remember { mutableStateOf("") }
+    var isCurrentPinVerified by remember { mutableStateOf(onVerifyCurrentPin == null) }
     var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -658,25 +697,45 @@ fun ChangePinSheetContent(
             Spacer(modifier = Modifier.width(14.dp))
             Column {
                 Text(text = "Change Master PIN", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(text = "Enter a new 4-digit master security PIN", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = if (!isCurrentPinVerified) "Enter current PIN to confirm identity" else "Enter a new 4-digit master security PIN",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
-        OutlinedTextField(
-            value = newPin,
-            onValueChange = { if (it.length <= 4) newPin = it },
-            label = { Text("New 4-Digit PIN") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
+        if (!isCurrentPinVerified) {
+            OutlinedTextField(
+                value = currentPin,
+                onValueChange = { if (it.length <= 4 && it.all { ch -> ch.isDigit() }) currentPin = it },
+                label = { Text("Current 4-Digit PIN") },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            OutlinedTextField(
+                value = newPin,
+                onValueChange = { if (it.length <= 4 && it.all { ch -> ch.isDigit() }) newPin = it },
+                label = { Text("New 4-Digit PIN") },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = confirmPin,
-            onValueChange = { if (it.length <= 4) confirmPin = it },
-            label = { Text("Confirm PIN") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = confirmPin,
+                onValueChange = { if (it.length <= 4 && it.all { ch -> ch.isDigit() }) confirmPin = it },
+                label = { Text("Confirm PIN") },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         error?.let {
             Text(text = it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
@@ -690,18 +749,41 @@ fun ChangePinSheetContent(
                 Text("Cancel")
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Button(
-                onClick = {
-                    if (newPin.length != 4) {
-                        error = "PIN must be exactly 4 digits"
-                    } else if (newPin != confirmPin) {
-                        error = "PINs do not match"
-                    } else {
-                        onSavePin(newPin)
-                    }
+            if (!isCurrentPinVerified) {
+                Button(
+                    onClick = {
+                        if (currentPin.length != 4) {
+                            error = "Current PIN must be 4 digits"
+                            return@Button
+                        }
+                        scope.launch {
+                            val isValid = onVerifyCurrentPin?.invoke(currentPin) ?: true
+                            if (isValid) {
+                                isCurrentPinVerified = true
+                                error = null
+                            } else {
+                                error = "Current PIN is incorrect"
+                            }
+                        }
+                    },
+                    enabled = currentPin.length == 4
+                ) {
+                    Text("Verify & Continue")
                 }
-            ) {
-                Text("Save PIN")
+            } else {
+                Button(
+                    onClick = {
+                        if (newPin.length != 4) {
+                            error = "PIN must be exactly 4 digits"
+                        } else if (newPin != confirmPin) {
+                            error = "PINs do not match"
+                        } else {
+                            onSavePin(newPin)
+                        }
+                    }
+                ) {
+                    Text("Save PIN")
+                }
             }
         }
     }

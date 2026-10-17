@@ -7,6 +7,10 @@ import android.content.Context
 import android.os.Build
 import com.pixelguard.applock.data.local.PreferencesDataStore
 import com.pixelguard.applock.data.repository.AppLockRepositoryImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class AppLockApplication : Application() {
 
@@ -23,6 +27,18 @@ class AppLockApplication : Application() {
         val dataStore = PreferencesDataStore(applicationContext)
         repository = AppLockRepositoryImpl(applicationContext, dataStore)
         createNotificationChannels()
+
+        val appScope = CoroutineScope(Dispatchers.IO)
+        appScope.launch {
+            val attempts = dataStore.globalFailedAttemptsFlow.first()
+            val lockoutUntil = dataStore.globalLockoutUntilTimestampFlow.first()
+            com.pixelguard.applock.domain.usecase.SessionManager.syncPersistedLockout(attempts, lockoutUntil)
+        }
+        com.pixelguard.applock.domain.usecase.SessionManager.onLockoutChanged = { attempts, untilMs ->
+            appScope.launch {
+                dataStore.saveGlobalLockout(attempts, untilMs)
+            }
+        }
     }
 
     private fun createNotificationChannels() {

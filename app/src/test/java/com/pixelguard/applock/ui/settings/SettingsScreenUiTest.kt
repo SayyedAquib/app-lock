@@ -137,7 +137,7 @@ class SettingsScreenUiTest {
         }
 
         composeTestRule.onNodeWithText("Change Master PIN").performScrollTo().performClick()
-        composeTestRule.onNodeWithText("New 4-Digit PIN").assertExists()
+        composeTestRule.onNodeWithText("Current 4-Digit PIN").assertExists()
     }
 
     @Test

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -134,15 +135,31 @@ fun AppLockRoot(
     val permissionStatus by viewModel.permissionStatus.collectAsState()
     val isPinConfigured by viewModel.hasPinSet.collectAsState()
     var isAuthenticated by remember { mutableStateOf(false) }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, isPinConfigured) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                if (isPinConfigured == true) {
+                    isAuthenticated = false
+                }
+            } else if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                if (isPinConfigured == true && !isAuthenticated) {
+                    onPromptBiometric(
+                        { isAuthenticated = true },
+                        { /* user cancelled, stays on PIN screen */ }
+                    )
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     LaunchedEffect(isPinConfigured) {
-        if (isPinConfigured == true) {
-            // Authenticate when user opens Pixel Guard app if a Master PIN is configured
-            onPromptBiometric(
-                { isAuthenticated = true },
-                { /* user cancelled, stays on PIN screen */ }
-            )
-        } else if (isPinConfigured == false) {
+        if (isPinConfigured == false) {
             // First-time onboarding: allow entry to setup wizard without PIN gate
             isAuthenticated = true
         }

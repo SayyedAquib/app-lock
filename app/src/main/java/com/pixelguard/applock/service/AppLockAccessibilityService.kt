@@ -86,8 +86,8 @@ class AppLockAccessibilityService : AccessibilityService() {
         val packageName = event.packageName?.toString() ?: return
         val className = event.className?.toString() ?: ""
 
-        // 2. Ignore transient system packages, input methods, credential prompts, and Pixel Guard itself
-        if (isSystemOrTransientPackage(packageName) || isCredentialOrBiometricPrompt(className)) {
+        // 2. Ignore transient system packages, input methods, verified system credential prompts, and Pixel Guard itself
+        if (isSystemOrTransientPackage(packageName) || isCredentialOrBiometricPrompt(packageName, className)) {
             return
         }
 
@@ -187,13 +187,31 @@ class AppLockAccessibilityService : AccessibilityService() {
     }
 
     private fun isLauncherOrRecents(packageName: String): Boolean {
-        return packageName.contains("launcher", ignoreCase = true) ||
-                packageName.contains("recents", ignoreCase = true) ||
-                packageName == "com.google.android.apps.nexuslauncher" ||
-                packageName == "com.android.launcher3"
+        if (packageName == "com.google.android.apps.nexuslauncher" ||
+            packageName == "com.android.launcher3" ||
+            packageName == "com.android.systemui" ||
+            packageName == "com.google.android.systemui") {
+            return true
+        }
+
+        val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val defaultLauncher = try {
+            packageManager.resolveActivity(homeIntent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName
+        } catch (_: Exception) {
+            null
+        }
+
+        return packageName == defaultLauncher ||
+                packageName.contains("launcher", ignoreCase = true) ||
+                packageName.contains("recents", ignoreCase = true)
     }
 
-    private fun isCredentialOrBiometricPrompt(className: String): Boolean {
+    private fun isCredentialOrBiometricPrompt(packageName: String, className: String): Boolean {
+        val isSystemProvider = packageName == "com.android.settings" ||
+                packageName == "com.android.systemui" ||
+                packageName == "com.google.android.systemui"
+        if (!isSystemProvider) return false
+
         return className.contains("ConfirmDeviceCredential", ignoreCase = true) ||
                 className.contains("BiometricPrompt", ignoreCase = true) ||
                 className.contains("Fingerprint", ignoreCase = true) ||

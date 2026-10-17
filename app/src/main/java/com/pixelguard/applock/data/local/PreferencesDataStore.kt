@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -29,6 +30,28 @@ class PreferencesDataStore(private val context: Context) {
 
     val pinSaltFlow: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[KEY_PIN_SALT]
+    }
+
+    val globalFailedAttemptsFlow: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[KEY_GLOBAL_FAILED_ATTEMPTS] ?: 0
+    }
+
+    val globalLockoutUntilTimestampFlow: Flow<Long> = context.dataStore.data.map { preferences ->
+        preferences[KEY_GLOBAL_LOCKOUT_UNTIL_TIMESTAMP] ?: 0L
+    }
+
+    suspend fun saveGlobalLockout(failedAttempts: Int, lockoutUntilTimestamp: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_GLOBAL_FAILED_ATTEMPTS] = failedAttempts
+            preferences[KEY_GLOBAL_LOCKOUT_UNTIL_TIMESTAMP] = lockoutUntilTimestamp
+        }
+    }
+
+    suspend fun clearGlobalLockout() {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_GLOBAL_FAILED_ATTEMPTS] = 0
+            preferences[KEY_GLOBAL_LOCKOUT_UNTIL_TIMESTAMP] = 0L
+        }
     }
 
     val preferencesFlow: Flow<LockPreferences> = context.dataStore.data.map { preferences ->
@@ -158,5 +181,7 @@ class PreferencesDataStore(private val context: Context) {
         private val KEY_APP_SORT_ORDER = stringPreferencesKey("app_sort_order")
         private val KEY_PIN_ONLY_PACKAGES_JSON = stringPreferencesKey("pin_only_packages_json")
         private val KEY_NOTIFICATION_EXEMPT_PACKAGES_JSON = stringPreferencesKey("notification_exempt_packages_json")
+        private val KEY_GLOBAL_FAILED_ATTEMPTS = intPreferencesKey("global_failed_attempts")
+        private val KEY_GLOBAL_LOCKOUT_UNTIL_TIMESTAMP = longPreferencesKey("global_lockout_until_timestamp")
     }
 }

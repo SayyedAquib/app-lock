@@ -219,6 +219,18 @@
       - **Intruder Logs Evidence Viewer**: Pinch-to-zoom multi-touch gesture scaling (`detectTransformGestures` supporting up to 3.5x magnification) and fluid two-finger panning in photo preview modal, accompanied by contextual incident badges.
     - Verified with all 123 automated unit and Compose UI tests passing (100% pass rate).
     - Compiled optimized production release APK with full R8 shrinking and deployed directly to Google Pixel 9 via ADB.
+45. **Zero-Trust Master Authentication & OWASP MASVS Security Hardening (ADR 034)**:
+    - Remediated all 10 security findings from OWASP MASVS Mobile Security review:
+      - **SEC-101 (Zero-Trust Lifecycle Re-Authentication)**: Added `ON_STOP` invalidation in `MainActivity` (`isAuthenticated = false`) and auto re-authentication on `ON_RESUME`.
+      - **SEC-102 & SEC-108 (Secure 3-Step Master PIN Rotation)**: Implemented Current PIN challenge gate in `ChangePinSheetContent` prior to allowing credential rotation, with numeric masking (`PasswordVisualTransformation`) and `KeyboardType.NumberPassword`.
+      - **SEC-103 (Cross-App Global Brute-Force Rate Limiting)**: Implemented `GLOBAL_PACKAGE = "__GLOBAL__"` in `SessionManager` preventing rotating attacks across different locked apps, with progressive lockouts (5 fails = 30s, 8 fails = 60s, 10+ fails = 300s).
+      - **SEC-104 (Persistent Lockout State)**: Persisted rate limiting failed attempts and lockout expiration timestamps in `PreferencesDataStore`; re-synced on boot in `BootReceiver` and `AppLockApplication`.
+      - **SEC-105 (Platform-Bound Biometric Verification)**: Hardened `isCredentialOrBiometricPrompt()` to strictly verify package authenticity against platform providers (`com.android.settings`, `com.android.systemui`, `com.google.android.systemui`).
+      - **SEC-106 (Dynamic Launcher & Recents Discovery)**: Resolved home activity dynamically using `PackageManager.resolveActivity(Intent(ACTION_MAIN, CATEGORY_HOME))` with fallback system package sets.
+      - **SEC-107 (Context-Aware Transition Buffer)**: Bound the 3-second transition buffer strictly to transient system window dismissals (`isTransientLauncher`), immediately evicting sessions and relocking on switching to distinct third-party apps.
+      - **SEC-109 (Decoy Crash Inconsistency Remediation)**: Wired `isDecoyCrashEnabled` in `LockActivity` for standard accessibility triggers.
+      - **SEC-110 (1-Tap "Arm Recommended Shields" Fast Remediation)**: Added 1-tap activation in the Settings "Attention Needed" banner enabling both Settings Protection and Recents Masking simultaneously.
+    - Verified with all 123 automated tests passing cleanly (100% pass rate).
 
 ## Known Problems
 - None in active runtime. On Android 17, initial sideloading requires the user to tap "Allow restricted settings" in App Info for Accessibility Service toggle activation (interactive guidance provided in Onboarding).
@@ -250,6 +262,7 @@
 - Decided on OWASP Mobile Full-Stack Security Hardening & Remediation (ADR 031).
 - Decided on Mandatory Production (Release) Build Deployment Architecture (ADR 032).
 - Decided on Material 3 Expressive & Fluid Motion Architecture (ADR 033).
+- Decided on Zero-Trust Master Authentication & OWASP MASVS Security Hardening (ADR 034).
 
 ## Next Steps
 - Explore Roadmap feature: Calculator / Notes Stealth Disguise mode.

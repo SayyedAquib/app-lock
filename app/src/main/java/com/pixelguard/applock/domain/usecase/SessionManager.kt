@@ -114,9 +114,10 @@ object SessionManager {
         }
 
         val nowTime = now()
+        val exitTime = exitTimestamps[packageName]
 
-        // 2. Initial launch transition buffer (3s) to prevent flicker/race conditions
-        if (nowTime - unlockTime < 3000L) {
+        // 2. Initial launch transition buffer (3s) ONLY before the user has navigated away (exitTime == null)
+        if (exitTime == null && (nowTime - unlockTime) in 0 until 3000L) {
             return true
         }
 
@@ -127,8 +128,8 @@ object SessionManager {
         }
 
         // 4. Grace period counts down from when the user exited the app
-        val exitTime = exitTimestamps[packageName] ?: unlockTime
-        val elapsedSinceExit = (nowTime - exitTime) / 1000
+        val baseExitTime = exitTime ?: unlockTime
+        val elapsedSinceExit = (nowTime - baseExitTime) / 1000
         return elapsedSinceExit < effectiveGraceSeconds
     }
 
@@ -170,15 +171,32 @@ object SessionManager {
         exitTimestamps[packageName] = exitTimestampMs
     }
 
+    private val TRANSIENT_LAUNCHER_PACKAGES = setOf(
+        "com.google.android.apps.nexuslauncher",
+        "com.android.launcher3",
+        "com.google.android.setupwizard",
+        "com.android.systemui",
+        "com.google.android.systemui"
+    )
+
+    fun isTransientLauncher(packageName: String): Boolean {
+        return TRANSIENT_LAUNCHER_PACKAGES.contains(packageName) ||
+                packageName.endsWith(".launcher") ||
+                packageName.endsWith(".launcher3")
+    }
+
     fun onAppSwitched(newPackageName: String, effectiveGraceSeconds: Int) {
         if (currentForegroundPackage != newPackageName) {
             currentForegroundPackage?.let { prevPkg ->
                 if (unlockedSessions.containsKey(prevPkg)) {
                     val nowTime = now()
-                    exitTimestamps[prevPkg] = nowTime
-                    // Only evict session immediately if 0s grace AND not in 3s launch buffer
-                    if (effectiveGraceSeconds <= 0 && !isRecentlyUnlocked(prevPkg, 3000L)) {
-                        unlockedSessions.remove(prevPkg)
+                    val inTransition = isRecentlyUnlocked(prevPkg, 3000L) && isTransientLauncher(newPackageName)
+                    if (!inTransition) {
+                        exitTimestamps[prevPkg] = nowTime
+                        // Evict session immediately if 0s grace
+                        if (effectiveGraceSeconds <= 0) {
+                            unlockedSessions.remove(prevPkg)
+                        }
                     }
                 }
             }
@@ -199,8 +217,6 @@ object SessionManager {
         unlockedSessions.clear()
         exitTimestamps.clear()
         currentForegroundPackage = null
-        failedAttempts.clear()
-        lockoutTimestamps.clear()
     }
 
     fun lockPackage(packageName: String) {
@@ -211,27 +227,61 @@ object SessionManager {
         }
     }
 
-    // --- Failed Attempts & Rate Limiting API (SEC-002 Monotonic Clock) ---
+    // --- Failed Attempts & Rate Limiting API (SEC-103 Global Rate Limit & SEC-104 Persistence) ---
+
+    const val GLOBAL_PACKAGE = "__GLOBAL__"
+
+    var onLockoutChanged: ((attempts: Int, untilMs: Long) -> Unit)? = null
+
+    fun syncPersistedLockout(attempts: Int, untilMs: Long) {
+        if (attempts > 0) {
+            failedAttempts[GLOBAL_PACKAGE] = attempts
+        }
+        if (untilMs > now()) {
+            lockoutTimestamps[GLOBAL_PACKAGE] = untilMs
+        }
+    }
 
     fun incrementFailedAttempts(packageName: String): Int {
-        val count = (failedAttempts[packageName] ?: 0) + 1
-        failedAttempts[packageName] = count
+        val pkgCount = (failedAttempts[packageName] ?: 0) + 1
+        failedAttempts[packageName] = pkgCount
+
+        val globalCount = (failedAttempts[GLOBAL_PACKAGE] ?: 0) + 1
+        failedAttempts[GLOBAL_PACKAGE] = globalCount
         val nowTime = now()
-        if (count == 5) {
-            lockoutTimestamps[packageName] = nowTime + 30_000L
-        } else if (count >= 8) {
-            lockoutTimestamps[packageName] = nowTime + 60_000L
+
+        val penalty = when {
+            globalCount >= 10 -> 300_000L // 5 minutes progressive lockout
+            globalCount >= 8 -> 60_000L   // 1 minute
+            globalCount >= 5 -> 30_000L   // 30 seconds
+            else -> 0L
         }
-        return count
+
+        if (penalty > 0L) {
+            val lockoutUntil = nowTime + penalty
+            lockoutTimestamps[GLOBAL_PACKAGE] = lockoutUntil
+            lockoutTimestamps[packageName] = lockoutUntil
+            onLockoutChanged?.invoke(globalCount, lockoutUntil)
+        } else {
+            onLockoutChanged?.invoke(globalCount, 0L)
+        }
+        return globalCount
     }
 
     fun getFailedAttempts(packageName: String): Int {
         return failedAttempts[packageName] ?: 0
     }
 
+    fun getGlobalFailedAttempts(): Int {
+        return failedAttempts[GLOBAL_PACKAGE] ?: 0
+    }
+
     fun getRemainingLockoutSeconds(packageName: String): Int {
-        val lockoutUntil = lockoutTimestamps[packageName] ?: return 0
-        val remainingMs = lockoutUntil - now()
+        val globalUntil = lockoutTimestamps[GLOBAL_PACKAGE] ?: 0L
+        val pkgUntil = lockoutTimestamps[packageName] ?: 0L
+        val effectiveUntil = maxOf(globalUntil, pkgUntil)
+        if (effectiveUntil <= 0L) return 0
+        val remainingMs = effectiveUntil - now()
         return if (remainingMs > 0) ((remainingMs + 999) / 1000).toInt() else 0
     }
 
@@ -240,16 +290,21 @@ object SessionManager {
     }
 
     fun getAttemptsUntilLockout(packageName: String): Int {
-        val current = failedAttempts[packageName] ?: 0
+        val current = failedAttempts[GLOBAL_PACKAGE] ?: failedAttempts[packageName] ?: 0
         return if (current < 5) 5 - current else 0
     }
 
     fun resetFailedAttempts(packageName: String) {
         failedAttempts.remove(packageName)
+        failedAttempts.remove(GLOBAL_PACKAGE)
         lockoutTimestamps.remove(packageName)
+        lockoutTimestamps.remove(GLOBAL_PACKAGE)
+        onLockoutChanged?.invoke(0, 0L)
     }
 
     internal fun setLockoutForTest(packageName: String, durationMs: Long) {
-        lockoutTimestamps[packageName] = now() + durationMs
+        val lockoutUntil = now() + durationMs
+        lockoutTimestamps[packageName] = lockoutUntil
+        lockoutTimestamps[GLOBAL_PACKAGE] = lockoutUntil
     }
 }

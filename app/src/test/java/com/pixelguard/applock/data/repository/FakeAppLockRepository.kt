@@ -91,4 +91,9 @@ class FakeAppLockRepository(
     override suspend fun clearAllIntruderRecords() {
         _intruderRecords.value = emptyList()
     }
+
+    override suspend fun enableRecommendedShields() {
+        val current = _preferences.value
+        _preferences.value = current.copy(isSettingsProtected = true, isRecentsMaskingEnabled = true)
+    }
 }

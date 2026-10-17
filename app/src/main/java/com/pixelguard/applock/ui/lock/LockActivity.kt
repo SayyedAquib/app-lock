@@ -131,7 +131,7 @@ class LockActivity : FragmentActivity() {
                         targetPackage = targetPackage,
                         targetAppName = if (isPauseAuthRequest) "Pause Protection" else appName,
                         targetIcon = appIcon,
-                        isDecoyEnabled = false,
+                        isDecoyEnabled = prefs.isDecoyCrashEnabled && !isPauseAuthRequest,
                         isBiometricEnabled = allowBiometrics,
                         isHapticsEnabled = prefs.isHapticsEnabled,
                         isAnimationsEnabled = effectiveAnimations,

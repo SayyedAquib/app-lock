@@ -167,6 +167,19 @@ Standard 4dp/8dp grid system:
   - *Keyhole*: Crisp Google Material Blue (`#1A73E8`) aperture centered in the lock body.
 - **Monochrome Themed Icon (`ic_launcher_monochrome.xml`)**: Single solid `#FFFFFF` vector path utilizing `android:fillType="evenOdd"` to cleanly carve out the padlock silhouette and fill the keyhole, providing flawless dynamic Monet wallpaper theming on Android 13-17 Pixel Launcher.
 
+### Attention Needed Security Card & 1-Tap Arming
+- **Card Hierarchy**: Rendered prominently in `SettingsScreen` whenever critical anti-tamper defenses are disarmed (e.g. `isSettingsProtected == false` or `isRecentsMaskingEnabled == false`).
+- **Styling**: `PixelAmber` container (`#F9AB00` with 0.12f alpha fill and 0.35f alpha outline border), Titan M2 shield badge, and high-visibility warning iconography.
+- **Fast Remediation**: Contains 1-tap `[Arm Recommended Shields]` elevated button with `ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)`. Tapping instantly arms both Settings Protection and Recents Masking, closing the vulnerability gap without tedious manual toggle hunting.
+
+### 3-Step Secure PIN Rotation Sheet
+- **Modal Architecture**: Integrated inside `ChangePinSheetContent` as a dedicated bottom sheet.
+- **Three-Stage Verification Flow**:
+  1. *Step 1: Current Master PIN*: Challenges the user for their existing 4-digit PIN via PBKDF2 hash verification. Prevents unauthorized passcode modification if the phone is momentarily unlocked.
+  2. *Step 2: New 4-Digit Master PIN*: User enters the new PIN code with real-time numeric masking.
+  3. *Step 3: Confirm New PIN*: Confirms matching code with error feedback on mismatch.
+- **Visual Hygiene & Security**: All inputs use `PasswordVisualTransformation('\u2022')`, `KeyboardType.NumberPassword`, and auto-advance focus.
+
 ## Do Not
 - **Do NOT** use hardcoded non-theme colors for backgrounds or text.
 - **Do NOT** use square (0dp radius) buttons or harsh rectangular cards.

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.pixelguard.applock.AppLockApplication
+import com.pixelguard.applock.data.local.PreferencesDataStore
 import com.pixelguard.applock.domain.usecase.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,8 +21,13 @@ class BootReceiver : BroadcastReceiver() {
             // Wipe all session tokens
             SessionManager.clearAllSessions()
 
-            // Check if user enabled persistent foreground service
+            // Restore persistent brute-force lockout state across reboots
             CoroutineScope(Dispatchers.IO).launch {
+                val dataStore = PreferencesDataStore(context)
+                val attempts = dataStore.globalFailedAttemptsFlow.first()
+                val lockoutUntil = dataStore.globalLockoutUntilTimestampFlow.first()
+                SessionManager.syncPersistedLockout(attempts, lockoutUntil)
+
                 val preferences = AppLockApplication.instance.repository.preferences.first()
                 if (preferences.isForegroundServiceEnabled) {
                     val serviceIntent = Intent(context, AppLockForegroundService::class.java)
