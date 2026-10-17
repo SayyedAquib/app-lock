@@ -208,8 +208,9 @@
 43. **Mandatory Production (Release) Deployment Policy & R8 Optimization (ADR 032)**:
     - **User Mandate**: Codified project-wide policy requiring all on-device deployments to be **Production (Release) Builds** (`assembleRelease` -> `app-release.apk`) rather than debug builds.
     - **Optimization Profile**: Release build activates full R8 / ProGuard minification, resource shrinking, dead code stripping, and removes `DEBUGGABLE` flags, reducing APK size by **94.6%** (from 66.1 MB down to 3.56 MB).
+    - **Build Performance Tuning**: Tuned `gradle.properties` (`-Xmx4096m -XX:+UseParallelGC`, `org.gradle.parallel=true`, `org.gradle.caching=true`), reducing subsequent release compile times from 9m 41s (cold) down to **24s** (warm cached). Actual on-device streaming install (`adb install`) takes only ~12s.
     - **Governance Updates**: Updated `AGENTS.md` (Build Commands, Verification Checklist, Forbidden Changes) and `docs/RULES.md` (Deployment & Build Rules, Forbidden Practices).
-    - **Deployment & Verification**: Successfully built `app-release.apk` with R8 (`BUILD SUCCESSFUL in 9m 41s`), installed to Google Pixel 9 via `adb install -r -d`, launched `MainActivity`, and verified non-debuggable flags (`flags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ]`).
+    - **Deployment & Verification**: Successfully built `app-release.apk` with R8, installed to Google Pixel 9 via `adb install -r -d`, launched `MainActivity`, and verified non-debuggable flags (`flags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ]`).
 
 ## Known Problems
 - None in active runtime. On Android 17, initial sideloading requires the user to tap "Allow restricted settings" in App Info for Accessibility Service toggle activation (interactive guidance provided in Onboarding).
