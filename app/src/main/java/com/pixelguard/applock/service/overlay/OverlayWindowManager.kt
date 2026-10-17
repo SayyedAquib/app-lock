@@ -95,8 +95,13 @@ class OverlayWindowManager(private val context: Context) {
                         lockoutSecondsProvider = { SessionManager.getRemainingLockoutSeconds(packageName) },
                         attemptsUntilLockoutProvider = { SessionManager.getAttemptsUntilLockout(packageName) },
                         onUnlockSuccess = {
-                            SessionManager.resetFailedAttempts(packageName)
-                            SessionManager.markAppUnlocked(packageName)
+                            // SEC-001 Fix: Delegate biometric authentication to LockActivity (FragmentActivity)
+                            // rather than directly unlocking the application without verifying credentials.
+                            val intent = Intent(context, com.pixelguard.applock.ui.lock.LockActivity::class.java).apply {
+                                putExtra(com.pixelguard.applock.ui.lock.LockActivity.EXTRA_TARGET_PACKAGE, packageName)
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION
+                            }
+                            context.startActivity(intent)
                             dismissOverlay()
                         },
                         onPinSubmitted = { pin ->

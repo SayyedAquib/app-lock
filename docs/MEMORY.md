@@ -194,6 +194,17 @@
     - **Adaptive Foreground (`ic_launcher_foreground.xml`)**: Implemented modern rounded shield crest divided into 4 Google brand color quadrants (Blue `#4285F4`, Red `#EA4335`, Yellow `#FBBC05`, Green `#34A853`), featuring a unified white negative-space padlock cutout (shackle + body) with shield colors peeking through the shackle arch and a Google Material Blue (`#1A73E8`) keyhole.
     - **Monochrome Themed Icon (`ic_launcher_monochrome.xml`)**: Structured single-path `android:fillType="evenOdd"` vector carving out the padlock silhouette and restoring the keyhole for native Monet dynamic wallpaper theming on Android 13-17 Pixel Launcher.
     - Passed all 122 automated unit/service tests, verified clean build with `assembleDebug`, and deployed directly to connected Google Pixel 9 via ADB.
+42. **OWASP Mobile Full-Stack Security Hardening & Remediation (ADR 031)**:
+    - Remediated all 7 security findings from the comprehensive OWASP MASVS v2.1 code audit:
+      - **SEC-001 (Overlay Window Biometric Bypass)**: Rewired overlay biometric tap to transition into `LockActivity` (`FragmentActivity`) for hardware `BiometricPrompt` verification, eliminating unauthorized unlock bypass.
+      - **SEC-002 (Wall-Clock Monotonicity Flaw)**: Replaced wall-clock `System.currentTimeMillis()` with monotonic `SystemClock.elapsedRealtime()` across `SessionManager` rate limiting, lockout countdowns, and session timers, preventing clock tampering bypass.
+      - **SEC-003 (Package Filter Substring Flaw)**: Replaced loose `.contains("keyboard")` and `.contains("systemui")` with exact sets (`KNOWN_SYSTEM_PACKAGES`) and dynamic `InputMethodManager.enabledInputMethodList` checks.
+      - **SEC-004 (Launch Transition Buffer)**: Bound `isRecentlyUnlocked` elapsed difference (`diff in 0 until thresholdMs`) and ensured app transitions properly manage session states.
+      - **SEC-005 (Encrypted Intruder Metadata)**: Upgraded `intruder_records.json` to AES-256-GCM encrypted container `intruder_records.enc` with automatic migration from legacy plaintext.
+      - **SEC-006 (Memory Hygiene with CharArray)**: Added `hashPin(pin: CharArray, salt: ByteArray)` with immediate memory zeroing (`fill('0')`) on both internal and caller buffers.
+      - **SEC-007 (Titan M2 StrongBox KeyStore Backing)**: Enabled `setIsStrongBoxBacked(true)` in `CryptoManager.createKey()` with automatic TEE fallback.
+    - Verified all **123 automated tests** passing with exit code 0 (`BUILD SUCCESSFUL`).
+    - Successfully compiled debug APK with AAPT2 and DEX shrinking.
 
 ## Known Problems
 - None in active runtime. On Android 17, initial sideloading requires the user to tap "Allow restricted settings" in App Info for Accessibility Service toggle activation (interactive guidance provided in Onboarding).

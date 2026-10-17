@@ -75,7 +75,8 @@ class AppLockRepositoryImpl(
 
     override suspend fun setPin(newPin: String) {
         val salt = cryptoManager.generateSalt()
-        val hash = cryptoManager.hashPin(newPin, salt)
+        val chars = newPin.toCharArray()
+        val hash = cryptoManager.hashPin(chars, salt) // SEC-006: hashPin zeroes chars buffer
         val saltHex = salt.joinToString("") { "%02x".format(it) }
         preferencesDataStore.savePin(hash, saltHex)
     }
@@ -88,7 +89,8 @@ class AppLockRepositoryImpl(
             return false
         }
         val salt = storedSaltHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-        val computedHash = cryptoManager.hashPin(inputPin, salt)
+        val chars = inputPin.toCharArray()
+        val computedHash = cryptoManager.hashPin(chars, salt) // SEC-006: hashPin zeroes chars buffer
         return cryptoManager.verifyHash(computedHash, storedHash)
     }
 
@@ -172,36 +174,59 @@ class AppLockRepositoryImpl(
         }
     }
 
-    private fun loadIntruderRecords() {
-        val file = File(context.filesDir, "intruder_records.json")
-        if (!file.exists()) {
-            _intruderRecords.value = emptyList()
-            return
-        }
-        try {
-            val jsonStr = file.readText()
-            val array = JSONArray(jsonStr)
-            val list = mutableListOf<IntruderRecord>()
-            for (i in 0 until array.length()) {
-                val obj = array.getJSONObject(i)
-                list.add(
-                    IntruderRecord(
-                        id = obj.getString("id"),
-                        timestamp = obj.getLong("timestamp"),
-                        targetPackageName = obj.getString("targetPackageName"),
-                        targetAppName = obj.getString("targetAppName"),
-                        photoPath = obj.getString("photoPath")
-                    )
+    private fun parseRecordsJson(jsonStr: String): List<IntruderRecord> {
+        val array = JSONArray(jsonStr)
+        val list = mutableListOf<IntruderRecord>()
+        for (i in 0 until array.length()) {
+            val obj = array.getJSONObject(i)
+            list.add(
+                IntruderRecord(
+                    id = obj.getString("id"),
+                    timestamp = obj.getLong("timestamp"),
+                    targetPackageName = obj.getString("targetPackageName"),
+                    targetAppName = obj.getString("targetAppName"),
+                    photoPath = obj.getString("photoPath")
                 )
+            )
+        }
+        return list.sortedByDescending { it.timestamp }
+    }
+
+    private fun loadIntruderRecords() {
+        val encFile = File(context.filesDir, "intruder_records.enc")
+        val legacyJsonFile = File(context.filesDir, "intruder_records.json")
+
+        // 1. SEC-005: Read encrypted intruder metadata
+        if (encFile.exists()) {
+            try {
+                val encBytes = encFile.readBytes()
+                val decBytes = cryptoManager.decryptFromFileBytes(encBytes)
+                val jsonStr = String(decBytes, Charsets.UTF_8)
+                _intruderRecords.value = parseRecordsJson(jsonStr)
+                return
+            } catch (_: Exception) {
+                _intruderRecords.value = emptyList()
             }
-            _intruderRecords.value = list.sortedByDescending { it.timestamp }
-        } catch (_: Exception) {
+        }
+
+        // 2. Seamless Auto-Migration: If legacy plaintext JSON exists, auto-encrypt and delete legacy file
+        if (legacyJsonFile.exists()) {
+            try {
+                val jsonStr = legacyJsonFile.readText()
+                val list = parseRecordsJson(jsonStr)
+                _intruderRecords.value = list
+                saveIntruderRecords(list) // Writes encrypted intruder_records.enc
+                legacyJsonFile.delete() // Securely remove legacy unencrypted file
+            } catch (_: Exception) {
+                _intruderRecords.value = emptyList()
+            }
+        } else {
             _intruderRecords.value = emptyList()
         }
     }
 
     private fun saveIntruderRecords(records: List<IntruderRecord>) {
-        val file = File(context.filesDir, "intruder_records.json")
+        val encFile = File(context.filesDir, "intruder_records.enc")
         val array = JSONArray()
         records.forEach { record ->
             val obj = JSONObject().apply {
@@ -213,7 +238,11 @@ class AppLockRepositoryImpl(
             }
             array.put(obj)
         }
-        file.writeText(array.toString())
+        try {
+            val jsonBytes = array.toString().toByteArray(Charsets.UTF_8)
+            val encrypted = cryptoManager.encryptToFileBytes(jsonBytes)
+            encFile.writeBytes(encrypted)
+        } catch (_: Exception) {}
     }
 
     override suspend fun addIntruderRecord(record: IntruderRecord) {
@@ -240,7 +269,9 @@ class AppLockRepositoryImpl(
             if (photoFile.exists()) photoFile.delete()
         }
         _intruderRecords.value = emptyList()
-        val file = File(context.filesDir, "intruder_records.json")
-        if (file.exists()) file.delete()
+        val encFile = File(context.filesDir, "intruder_records.enc")
+        if (encFile.exists()) encFile.delete()
+        val legacyFile = File(context.filesDir, "intruder_records.json")
+        if (legacyFile.exists()) legacyFile.delete()
     }
 }

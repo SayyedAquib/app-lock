@@ -168,20 +168,22 @@ class AppLockAccessibilityService : AccessibilityService() {
     }
 
     private fun isSystemOrTransientPackage(packageName: String): Boolean {
-        return packageName == applicationContext.packageName ||
-                packageName == "android" ||
-                packageName.contains("systemui", ignoreCase = true) ||
-                packageName.contains("inputmethod", ignoreCase = true) ||
-                packageName.contains("keyboard", ignoreCase = true) ||
-                packageName == "com.google.android.gms" ||
-                packageName.startsWith("com.google.android.ext.") ||
-                packageName == "com.google.android.permissioncontroller" ||
-                packageName == "com.android.permissioncontroller" ||
-                packageName == "com.google.android.as" ||
-                packageName == "com.android.intentresolver" ||
-                packageName.contains("photopicker", ignoreCase = true) ||
-                packageName == "com.google.android.providers.media.module" ||
-                packageName == "com.android.providers.media.module"
+        if (packageName == applicationContext.packageName || packageName == "android") return true
+
+        // 1. Canonical System UI
+        if (packageName == "com.android.systemui" || packageName == "com.google.android.systemui") return true
+
+        // 2. Exact known platform & framework provider packages (SEC-003: eliminates rogue substring matching bypasses)
+        if (KNOWN_SYSTEM_PACKAGES.contains(packageName) || packageName.startsWith("com.google.android.ext.")) return true
+
+        // 3. Dynamic verification for registered system Input Method Editors (keyboards)
+        val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
+        try {
+            val isEnabledIme = imm?.enabledInputMethodList?.any { it.packageName == packageName } == true
+            if (isEnabledIme) return true
+        } catch (_: Exception) {}
+
+        return false
     }
 
     private fun isLauncherOrRecents(packageName: String): Boolean {
@@ -218,6 +220,20 @@ class AppLockAccessibilityService : AccessibilityService() {
             "com.google.android.packageinstaller",
             "com.android.packageinstaller",
             "com.samsung.android.packageinstaller"
+        )
+
+        private val KNOWN_SYSTEM_PACKAGES = setOf(
+            "com.google.android.gms",
+            "com.google.android.permissioncontroller",
+            "com.android.permissioncontroller",
+            "com.google.android.as",
+            "com.android.intentresolver",
+            "com.google.android.providers.media.module",
+            "com.android.providers.media.module",
+            "com.google.android.photopicker",
+            "com.android.photopicker",
+            "com.google.android.inputmethod.latin",
+            "com.android.inputmethod.latin"
         )
 
         private const val PLAY_STORE_PACKAGE = "com.android.vending"

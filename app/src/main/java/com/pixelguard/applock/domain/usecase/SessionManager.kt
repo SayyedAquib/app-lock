@@ -18,6 +18,24 @@ object SessionManager {
     // Per-package lockout timestamp (in milliseconds) for brute-force rate limiting
     private val lockoutTimestamps = ConcurrentHashMap<String, Long>()
 
+    // Monotonic Clock Provider (SEC-002):
+    // android.os.SystemClock.elapsedRealtime() is strictly monotonic and immune to user clock adjustments.
+    // Falls back to System.currentTimeMillis() if unmocked (0L) on pure JVM unit tests.
+    private var timeProvider: () -> Long = {
+        try {
+            val monotonic = android.os.SystemClock.elapsedRealtime()
+            if (monotonic > 0L) monotonic else System.currentTimeMillis()
+        } catch (_: Throwable) {
+            System.currentTimeMillis()
+        }
+    }
+
+    fun now(): Long = timeProvider()
+
+    internal fun setTimeProviderForTest(provider: () -> Long) {
+        timeProvider = provider
+    }
+
     // Current package currently being viewed/unlocked
     @Volatile
     var currentForegroundPackage: String? = null
@@ -30,7 +48,7 @@ object SessionManager {
         pauseUntilTimestamp = if (durationMinutes < 0) {
             Long.MAX_VALUE
         } else {
-            System.currentTimeMillis() + (durationMinutes * 60 * 1000L)
+            now() + (durationMinutes * 60 * 1000L)
         }
     }
 
@@ -43,12 +61,12 @@ object SessionManager {
     }
 
     fun isPaused(): Boolean {
-        return System.currentTimeMillis() < pauseUntilTimestamp
+        return now() < pauseUntilTimestamp
     }
 
     fun getRemainingPauseMinutes(): Int {
         if (pauseUntilTimestamp == Long.MAX_VALUE) return -1
-        val diff = pauseUntilTimestamp - System.currentTimeMillis()
+        val diff = pauseUntilTimestamp - now()
         return if (diff > 0) ((diff / 60000) + 1).toInt() else 0
     }
 
@@ -95,10 +113,10 @@ object SessionManager {
             return true
         }
 
-        val now = System.currentTimeMillis()
+        val nowTime = now()
 
         // 2. Initial launch transition buffer (3s) to prevent flicker/race conditions
-        if (now - unlockTime < 3000L) {
+        if (nowTime - unlockTime < 3000L) {
             return true
         }
 
@@ -110,18 +128,19 @@ object SessionManager {
 
         // 4. Grace period counts down from when the user exited the app
         val exitTime = exitTimestamps[packageName] ?: unlockTime
-        val elapsedSinceExit = (now - exitTime) / 1000
+        val elapsedSinceExit = (nowTime - exitTime) / 1000
         return elapsedSinceExit < effectiveGraceSeconds
     }
 
     fun isRecentlyUnlocked(packageName: String, thresholdMs: Long = 3000L): Boolean {
         val unlockTime = unlockedSessions[packageName] ?: return false
-        return (System.currentTimeMillis() - unlockTime) < thresholdMs
+        val diff = now() - unlockTime
+        return diff in 0 until thresholdMs
     }
 
     fun markAppUnlocked(packageName: String) {
-        val now = System.currentTimeMillis()
-        unlockedSessions[packageName] = now
+        val nowTime = now()
+        unlockedSessions[packageName] = nowTime
         exitTimestamps.remove(packageName)
         currentForegroundPackage = packageName
     }
@@ -155,8 +174,8 @@ object SessionManager {
         if (currentForegroundPackage != newPackageName) {
             currentForegroundPackage?.let { prevPkg ->
                 if (unlockedSessions.containsKey(prevPkg)) {
-                    val now = System.currentTimeMillis()
-                    exitTimestamps[prevPkg] = now
+                    val nowTime = now()
+                    exitTimestamps[prevPkg] = nowTime
                     // Only evict session immediately if 0s grace AND not in 3s launch buffer
                     if (effectiveGraceSeconds <= 0 && !isRecentlyUnlocked(prevPkg, 3000L)) {
                         unlockedSessions.remove(prevPkg)
@@ -168,9 +187,9 @@ object SessionManager {
     }
 
     fun onScreenOff() {
-        val now = System.currentTimeMillis()
+        val nowTime = now()
         currentForegroundPackage?.let { fgPkg ->
-            exitTimestamps[fgPkg] = now
+            exitTimestamps[fgPkg] = nowTime
             unlockedSessions.remove(fgPkg)
         }
         currentForegroundPackage = null
@@ -192,15 +211,16 @@ object SessionManager {
         }
     }
 
-    // --- Failed Attempts & Rate Limiting API ---
+    // --- Failed Attempts & Rate Limiting API (SEC-002 Monotonic Clock) ---
 
     fun incrementFailedAttempts(packageName: String): Int {
         val count = (failedAttempts[packageName] ?: 0) + 1
         failedAttempts[packageName] = count
+        val nowTime = now()
         if (count == 5) {
-            lockoutTimestamps[packageName] = System.currentTimeMillis() + 30_000L
+            lockoutTimestamps[packageName] = nowTime + 30_000L
         } else if (count >= 8) {
-            lockoutTimestamps[packageName] = System.currentTimeMillis() + 60_000L
+            lockoutTimestamps[packageName] = nowTime + 60_000L
         }
         return count
     }
@@ -211,7 +231,7 @@ object SessionManager {
 
     fun getRemainingLockoutSeconds(packageName: String): Int {
         val lockoutUntil = lockoutTimestamps[packageName] ?: return 0
-        val remainingMs = lockoutUntil - System.currentTimeMillis()
+        val remainingMs = lockoutUntil - now()
         return if (remainingMs > 0) ((remainingMs + 999) / 1000).toInt() else 0
     }
 
@@ -230,6 +250,6 @@ object SessionManager {
     }
 
     internal fun setLockoutForTest(packageName: String, durationMs: Long) {
-        lockoutTimestamps[packageName] = System.currentTimeMillis() + durationMs
+        lockoutTimestamps[packageName] = now() + durationMs
     }
 }

@@ -30,36 +30,60 @@ class CryptoManager {
             KeyProperties.KEY_ALGORITHM_AES,
             KEYSTORE_PROVIDER
         )
-        val keyGenParameterSpec = KeyGenParameterSpec.Builder(
-            KEY_ALIAS,
-            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-        )
-            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            .setUserAuthenticationRequired(false)
-            .setRandomizedEncryptionRequired(true)
-            .build()
-
-        keyGenerator.init(keyGenParameterSpec)
-        return keyGenerator.generateKey()
+        // Titan M2 / StrongBox Hardware Security Module (SEC-007):
+        // Attempt dedicated StrongBox hardware-isolated key generation; gracefully fallback to TEE
+        return try {
+            val strongBoxSpec = KeyGenParameterSpec.Builder(
+                KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setUserAuthenticationRequired(false)
+                .setRandomizedEncryptionRequired(true)
+                .setIsStrongBoxBacked(true)
+                .build()
+            keyGenerator.init(strongBoxSpec)
+            keyGenerator.generateKey()
+        } catch (_: Exception) {
+            // Standard TEE fallback when StrongBox is unavailable (e.g. emulators)
+            val teeSpec = KeyGenParameterSpec.Builder(
+                KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setUserAuthenticationRequired(false)
+                .setRandomizedEncryptionRequired(true)
+                .build()
+            keyGenerator.init(teeSpec)
+            keyGenerator.generateKey()
+        }
     }
 
     /**
      * Hashes a PIN using PBKDF2WithHmacSHA256 with 200,000 iterations.
-     * This makes offline brute-force of a 4-digit PIN effectively impossible
-     * even after DataStore file extraction on a rooted device.
+     * Memory Hygiene (SEC-006): Zeroes out both the PBEKeySpec and the caller's CharArray buffer.
      */
-    fun hashPin(pin: String, salt: ByteArray): String {
+    fun hashPin(pin: CharArray, salt: ByteArray): String {
+        val pinCopy = pin.clone()
         val spec = PBEKeySpec(
-            pin.toCharArray(),
+            pinCopy,
             salt,
             PBKDF2_ITERATIONS,
             PBKDF2_KEY_LENGTH_BITS
         )
         val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
         val hash = factory.generateSecret(spec).encoded
-        spec.clearPassword() // Zero out the PBEKeySpec in memory after use
+        spec.clearPassword() // Zero out the PBEKeySpec internal buffer
+        pinCopy.fill('0')
+        pin.fill('0') // Zero out caller's char buffer
         return hash.joinToString("") { "%02x".format(it) }
+    }
+
+    fun hashPin(pin: String, salt: ByteArray): String {
+        val chars = pin.toCharArray()
+        return hashPin(chars, salt)
     }
 
     fun generateSalt(): ByteArray {

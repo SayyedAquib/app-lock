@@ -197,7 +197,7 @@ class AppLockAccessibilityServiceTest {
 
     @Test
     fun typeWindowStateChanged_launcher_immediateRelock_locksPreviousPackageAfterBuffer() {
-        val now = System.currentTimeMillis()
+        val now = SessionManager.now()
         SessionManager.markAppUnlockedForTest(bankPackage, now - 10_000L, inForeground = true)
         service.setLastPackageForTest(bankPackage)
 
@@ -215,7 +215,7 @@ class AppLockAccessibilityServiceTest {
 
     @Test
     fun typeWindowStateChanged_launcher_withGracePeriod_tracksExitAndKeepsUnlockedWithinGrace() {
-        val now = System.currentTimeMillis()
+        val now = SessionManager.now()
         service.setCachedPreferencesForTest(LockPreferences(gracePeriodSeconds = 30))
         SessionManager.markAppUnlockedForTest(bankPackage, now - 10_000L, inForeground = true)
         service.setLastPackageForTest(bankPackage)
