@@ -1124,3 +1124,33 @@ Auditing UI contrast across Light and Dark system modes revealed three critical 
 - Zero-latency, zero-leakage native experience.
 
 
+
+---
+
+## ADR 036: Security & Privacy FAQ Card & Accessibility Service Description Improvement
+### Date
+2026-10-18
+### Status
+Accepted
+### Context
+Users reported confusion about Android's periodic "Review app with full device access" system notification for Pixel Guard's Accessibility Service. This is a standard Android security reminder (introduced in Android 13+) that appears for ALL apps using `AccessibilityService`, but its wording ("can view your screen and perform actions") alarmed users into thinking the app was unsafe.
+### Options Considered
+1. Do nothing — the notification is an Android OS feature and cannot be suppressed. (Rejected: users remain alarmed without context.)
+2. Improve the Accessibility Service description and add an in-app FAQ. (Adopted: proactively educates users and builds trust.)
+3. Add only a dismissible banner on the main screen. (Rejected: too transient, doesn't address root concern.)
+### Decision
+Implemented a two-pronged approach:
+1. **Upgraded `accessibility_service_description`** in `strings.xml` to explicitly state: no screen content reading, no data collection, no transmission, on-device-only processing. This is the text shown in Android Settings → Accessibility when users toggle the service.
+2. **Added a "Security & Privacy Info" FAQ card** at the bottom of `SettingsScreen.kt` with 4 collapsible accordion-style items:
+   - Why Android shows the "Review app with full device access" notification
+   - Whether Pixel Guard reads screen content or personal data (`canRetrieveWindowContent=false`)
+   - Why Accessibility Service is technically required (zero-latency interception)
+   - Whether data is sent anywhere (zero network permissions, zero cloud endpoints)
+   Each item uses spring-animated `AnimatedVisibility` expand/shrink and `graphicsLayer` chevron rotation.
+### Consequences
+- Users who encounter the system notification can find a clear explanation inside the app.
+- The improved accessibility description reassures users directly in Android Settings.
+- No code changes to the Accessibility Service itself — only descriptive/UI improvements.
+- Consistent with the app's zero-cloud, on-device-only security architecture.
+- 100% test pass rate maintained with test suite expansion to 131 tests (51 Compose UI + 80 Unit & Service).
+

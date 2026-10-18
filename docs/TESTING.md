@@ -16,9 +16,9 @@ Pixel Guard enforces a pragmatic, high-assurance testing strategy. Because it is
   - `io.mockk:mockk:1.13.13`: Kotlin-first mocking for Android platform components and context services.
 - **Device Hardware Testing**: Android Debug Bridge (ADB) via PowerShell on Google Pixel 9 (Android 17, 120Hz display).
 
-## Test Suite Structure (122 Total Tests, 100% Passing)
+## Test Suite Structure (131 Total Tests, 100% Passing)
 
-### 1. Presentation & Compose UI Tests (50 tests)
+### 1. Presentation & Compose UI Tests (51 tests)
 All UI tests run via Compose UI Rule + Robolectric on the JVM with exact Pixel 9 display metrics:
 - **`MainScreenUiTest`** (16 tests):
   - TopAppBar header, Titan M2 armor branding, and Intruder selfie count badge.
@@ -58,7 +58,7 @@ All UI tests run via Compose UI Rule + Robolectric on the JVM with exact Pixel 9
   - Bottom action button enabled state and permission settings trigger capability.
   - Soft keyboard insets handling with `imePadding` and Step 2 auto-scroll visibility.
   - Android 17 notice card contextual visibility and contrast styling.
-- **`SettingsScreenUiTest`** (9 tests):
+- **`SettingsScreenUiTest`** (10 tests):
   - Screen title, Hardware-backed Titan M2 badge, and Biometrics toggle.
   - Dynamic Security Status Hero banner ("Hardware Armor Active").
   - Security Vulnerability Attention banner when settings protection or recents masking is disabled.
@@ -68,6 +68,7 @@ All UI tests run via Compose UI Rule + Robolectric on the JVM with exact Pixel 9
   - GlobalGracePeriodSheetContent selection of global grace period (e.g. 1 minute).
   - ScheduleSheetContent configuration of Night Lockdown hours (e.g. 10:00 PM – 6:00 AM).
   - QuickTilePauseSheetContent selection of quick settings pause duration (e.g. 30 minutes).
+  - SecurityPrivacyFaqCard accordion rendering, header, badge, questions, initial collapsed state, expand click revealing answer, and collapse click hiding answer.
 - **`IntruderLogsScreenUiTest`** (6 tests):
   - "No Break-In Attempts" empty state card when zero logs exist.
   - Intruder record card rendering (attempted app name, timestamp, failure count).

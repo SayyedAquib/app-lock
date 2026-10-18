@@ -239,6 +239,14 @@
       - **OLED Privacy Lock Isolation**: Enforced `PixelAppLockTheme(darkTheme = true)` on `LockActivity` for privacy, battery conservation, and visual consistency regardless of device theme.
       - **Automated WCAG 2.1 Unit Tests**: Implemented `DualThemeContrastTest.kt` validating WCAG relative luminance formulas ($\ge 4.5:1$ AA, $\ge 7.0:1$ AAA) and UI rendering across `MainScreen`, `SettingsScreen`, and `OnboardingScreen` in both themes.
     - Verified all **130 automated tests** passing with exit code 0 (`BUILD SUCCESSFUL`).
+ 47. **Security & Privacy FAQ Card & Accessibility Service Description Improvement (UX Trust)**:
+     - **Accessibility Service Description**: Upgraded `accessibility_service_description` in `strings.xml` from a brief functional description to a detailed, privacy-reassuring statement explicitly declaring no screen content reading, no data collection, no transmission, and on-device-only processing.
+     - **Collapsible FAQ Card in Settings**: Added a new "Security & Privacy Info" card at the bottom of `SettingsScreen.kt` with 4 accordion-style (expand-one-at-a-time) FAQ items addressing: (1) Android's periodic "Review app with full device access" system notification, (2) screen content and personal data privacy, (3) why Accessibility Service is technically required, and (4) zero-network data transmission architecture.
+     - **Spring-Animated Accordion**: Each FAQ item features a bouncy chevron rotation (`graphicsLayer { rotationZ }`) and `AnimatedVisibility` with spring-loaded `expandVertically`/`shrinkVertically` transitions.
+     - Added comprehensive Compose UI test in `SettingsScreenUiTest.kt` verifying header, badge, questions, and accordion toggle behavior.
+     - Expanded test suite to **131 automated tests** (51 Compose UI + 80 Unit & Service), 100% passing.
+     - Compiled production release APK (`app-release.apk`).
+     - Addresses user concern about the standard Android security reminder notification.
 
 ## Known Problems
 - None in active runtime. On Android 17, initial sideloading requires the user to tap "Allow restricted settings" in App Info for Accessibility Service toggle activation (interactive guidance provided in Onboarding).

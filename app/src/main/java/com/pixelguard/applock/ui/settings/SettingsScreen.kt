@@ -1,8 +1,11 @@
 package com.pixelguard.applock.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -36,7 +39,9 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MotionPhotosOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
@@ -76,6 +81,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -569,6 +575,9 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            // 6. Card 5: Security & Privacy Info (Collapsible FAQ)
+            SecurityPrivacyFaqCard()
         }
     }
 
@@ -1144,6 +1153,137 @@ private fun formatHour(hour: Int): String {
     val h = if (hour == 0) 12 else if (hour > 12) hour - 12 else hour
     val amPm = if (hour < 12) "AM" else "PM"
     return "$h:00 $amPm"
+}
+
+@Composable
+fun SecurityPrivacyFaqCard() {
+    // Accordion state: index of currently expanded item, -1 means all collapsed
+    var expandedIndex by remember { mutableStateOf(-1) }
+
+    data class FaqItem(val question: String, val answer: String)
+
+    val faqItems = remember {
+        listOf(
+            FaqItem(
+                question = "Why does Android show a \"Review app with full device access\" notification?",
+                answer = "This is a standard Android security reminder that appears periodically for ALL apps that use Accessibility Service — including password managers, screen readers, and automation tools. It does NOT mean Pixel Guard is unsafe. Android simply reminds you to review which apps have this permission. You can safely dismiss it."
+            ),
+            FaqItem(
+                question = "Does Pixel Guard read my screen content or personal data?",
+                answer = "No. Pixel Guard explicitly sets canRetrieveWindowContent to false in its Accessibility configuration. It only detects which app is in the foreground — it cannot read text, passwords, messages, or any on-screen content whatsoever."
+            ),
+            FaqItem(
+                question = "Why does Pixel Guard need Accessibility Service?",
+                answer = "Accessibility Service is the only Android API that provides instant, zero-latency detection of app launches. Without it, Pixel Guard would have to use slow polling methods that drain battery and introduce delays — leaving a window where locked apps could be briefly visible before the lock screen appears."
+            ),
+            FaqItem(
+                question = "Is my data sent anywhere?",
+                answer = "Absolutely not. Pixel Guard has zero network permissions, zero analytics SDKs, and zero cloud endpoints. All data — your PIN hash, locked app list, intruder photos, and settings — stays exclusively on your device, protected by Titan M2 hardware encryption."
+            )
+        )
+    }
+
+    SettingsCard {
+        SettingsCategoryHeader(
+            title = "Security & Privacy Info",
+            icon = Icons.Default.Info,
+            badgeText = "FAQ"
+        )
+
+        Text(
+            text = "Common questions about permissions and privacy",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        faqItems.forEachIndexed { index, item ->
+            if (index > 0) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                )
+            }
+            FaqAccordionItem(
+                question = item.question,
+                answer = item.answer,
+                isExpanded = expandedIndex == index,
+                onToggle = {
+                    expandedIndex = if (expandedIndex == index) -1 else index
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun FaqAccordionItem(
+    question: String,
+    answer: String,
+    isExpanded: Boolean,
+    onToggle: () -> Unit
+) {
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "faq_chevron"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle() }
+            .padding(vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = question,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription = if (isExpanded) "Collapse" else "Expand",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .size(22.dp)
+                    .graphicsLayer { rotationZ = chevronRotation }
+            )
+        }
+
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = expandVertically(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ),
+            exit = shrinkVertically(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMedium
+                )
+            )
+        ) {
+            Text(
+                text = answer,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp, end = 30.dp),
+                lineHeight = 18.sp
+            )
+        }
+    }
 }
 
 @Composable

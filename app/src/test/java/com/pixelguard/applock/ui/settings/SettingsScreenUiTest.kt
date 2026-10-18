@@ -232,4 +232,40 @@ class SettingsScreenUiTest {
 
         assertThat(selectedMinutes).isEqualTo(30)
     }
+
+    @Test
+    fun securityPrivacyFaqCard_displaysQuestionsAndTogglesAccordion() {
+        composeTestRule.setContent {
+            PixelAppLockTheme {
+                SecurityPrivacyFaqCard()
+            }
+        }
+
+        // Header and badge exist
+        composeTestRule.onNodeWithText("Security & Privacy Info").assertExists()
+        composeTestRule.onNodeWithText("FAQ").assertExists()
+
+        // Questions exist
+        val question1 = "Why does Android show a \"Review app with full device access\" notification?"
+        val question2 = "Does Pixel Guard read my screen content or personal data?"
+        composeTestRule.onNodeWithText(question1).assertExists()
+        composeTestRule.onNodeWithText(question2).assertExists()
+
+        val answer1 = "This is a standard Android security reminder that appears periodically for ALL apps that use Accessibility Service — including password managers, screen readers, and automation tools. It does NOT mean Pixel Guard is unsafe. Android simply reminds you to review which apps have this permission. You can safely dismiss it."
+
+        // Answer should not exist initially
+        composeTestRule.onNodeWithText(answer1).assertDoesNotExist()
+
+        // Click question 1 to expand
+        composeTestRule.onNodeWithText(question1).performClick()
+
+        // Now answer 1 exists
+        composeTestRule.onNodeWithText(answer1).assertExists()
+
+        // Click question 1 again to collapse
+        composeTestRule.onNodeWithText(question1).performClick()
+
+        // Answer 1 is hidden again
+        composeTestRule.onNodeWithText(answer1).assertDoesNotExist()
+    }
 }

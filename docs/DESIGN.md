@@ -113,6 +113,7 @@ Standard 4dp/8dp grid system:
 - **`SettingsCard`**: 18dp container with `surfaceContainer` tint, `1dp outlineVariant` border stroke, 32dp header icon disc, and 36dp tonal row icon discs.
 - **`Actionable Hero Banner` (Settings)**: Interactive security status card that detects unconfigured protections (e.g. Settings Protection, Recents Masking) and auto-scrolls down to the offending controls upon tap.
 - **`Recents Privacy Masking & Screen Mirroring`**: Toggles `FLAG_SECURE` dynamically on `MainActivity`, `LockActivity`, and system overlays. When disabled (default), enables full laptop screen mirroring via `scrcpy` and local screenshots. When enabled, strictly enforces hardware-level SurfaceFlinger blanking for maximum overview privacy.
+- **`SecurityPrivacyFaqCard`**: Collapsible accordion-style FAQ card in Settings with "Security & Privacy Info" header (Info icon, "FAQ" badge). Contains 4 expandable items addressing the Android system "Review app with full device access" notification, screen content privacy (`canRetrieveWindowContent=false`), Accessibility Service necessity, and zero-network architecture. Uses spring-animated `AnimatedVisibility` expand/shrink and `graphicsLayer` chevron rotation. Accordion behavior: one item expanded at a time, all start collapsed.
 
 ### Navigation & Chrome
 - TopAppBar includes back arrow button, brand title, live status count (`Pixel 9 Armor • $lockedCount Protected`), and shield action icon.
