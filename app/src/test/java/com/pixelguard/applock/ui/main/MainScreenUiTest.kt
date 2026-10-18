@@ -3,10 +3,13 @@ package com.pixelguard.applock.ui.main
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import com.google.common.truth.Truth.assertThat
 import com.pixelguard.applock.data.model.AppCategory
@@ -440,5 +443,83 @@ class MainScreenUiTest {
 
         composeTestRule.onNodeWithText("30s").performScrollTo().performClick()
         assertThat(selectedGrace).isEqualTo(30)
+    }
+
+    @Test
+    fun dashboard_customizedFilterChip_existsAndToggles() {
+        composeTestRule.setContent {
+            PixelAppLockTheme {
+                MainScreen(
+                    viewModel = viewModel,
+                    onNavigateToSettings = {},
+                    onNavigateToIntruders = {},
+                    onNavigateToPermissions = {}
+                )
+            }
+        }
+
+        // Verify Customized filter chip exists
+        composeTestRule.onNodeWithText("Customized (0)").assertExists()
+        composeTestRule.onNodeWithText("Customized (0)").performClick()
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(viewModel.isOnlyCustomizedFilterActive.value).isTrue()
+    }
+
+    @Test
+    fun customTagChip_filteringByTag() {
+        // Create user tag and assign to test app
+        viewModel.createUserTag("Finance")
+        viewModel.addTagToApp("com.google.android.apps.walletnfcrel", "Finance")
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+
+        composeTestRule.setContent {
+            PixelAppLockTheme {
+                MainScreen(
+                    viewModel = viewModel,
+                    onNavigateToSettings = {},
+                    onNavigateToIntruders = {},
+                    onNavigateToPermissions = {}
+                )
+            }
+        }
+
+        // Tag chip #Finance (1) is rendered
+        composeTestRule.onNodeWithText("#Finance (1)").assertExists()
+        composeTestRule.onNodeWithText("#Finance (1)").performClick()
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(viewModel.selectedTag.value).isEqualTo("Finance")
+        composeTestRule.onNodeWithText("Google Pay").assertExists()
+    }
+
+    @Test
+    fun appSecurityProfileSheet_displaysCategoryAndTagsSection() {
+        var selectedCategory: AppCategory? = null
+
+        composeTestRule.setContent {
+            PixelAppLockTheme {
+                AppSecurityProfileSheetContent(
+                    target = testApps[0],
+                    isTargetLocked = true,
+                    currentSec = 0,
+                    isPinOnlyActive = false,
+                    isNotifMaskedActive = false,
+                    isGlobalNotifShieldEnabled = true,
+                    onToggleLock = {},
+                    onTogglePinOnly = {},
+                    onToggleNotifMasking = {},
+                    onSelectGraceSeconds = {},
+                    userCustomTags = listOf("Work", "Crypto"),
+                    onSelectCategory = { selectedCategory = it }
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Category & Tags").assertExists()
+        composeTestRule.onNodeWithText("Category").assertExists()
+        composeTestRule.onNodeWithText("Banking & Finance").assertExists()
+        composeTestRule.onNodeWithText("Custom Tags").assertExists()
+        composeTestRule.onNodeWithText("+ Add Tag").assertExists()
     }
 }

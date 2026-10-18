@@ -85,7 +85,10 @@ class PreferencesDataStore(private val context: Context) {
                 AppSortOrder.NAME_ASC
             },
             pinOnlyPackagesJson = preferences[KEY_PIN_ONLY_PACKAGES_JSON] ?: "[]",
-            notificationExemptPackagesJson = preferences[KEY_NOTIFICATION_EXEMPT_PACKAGES_JSON] ?: "[]"
+            notificationExemptPackagesJson = preferences[KEY_NOTIFICATION_EXEMPT_PACKAGES_JSON] ?: "[]",
+            categoryOverridesJson = preferences[KEY_CATEGORY_OVERRIDES_JSON] ?: "{}",
+            userCustomTagsJson = preferences[KEY_USER_CUSTOM_TAGS_JSON] ?: "[]",
+            appCustomTagsJson = preferences[KEY_APP_CUSTOM_TAGS_JSON] ?: "{}"
         )
     }
 
@@ -142,6 +145,9 @@ class PreferencesDataStore(private val context: Context) {
             preferences[KEY_APP_SORT_ORDER] = prefs.appSortOrder.name
             preferences[KEY_PIN_ONLY_PACKAGES_JSON] = prefs.pinOnlyPackagesJson
             preferences[KEY_NOTIFICATION_EXEMPT_PACKAGES_JSON] = prefs.notificationExemptPackagesJson
+            preferences[KEY_CATEGORY_OVERRIDES_JSON] = prefs.categoryOverridesJson
+            preferences[KEY_USER_CUSTOM_TAGS_JSON] = prefs.userCustomTagsJson
+            preferences[KEY_APP_CUSTOM_TAGS_JSON] = prefs.appCustomTagsJson
         }
     }
 
@@ -181,6 +187,9 @@ class PreferencesDataStore(private val context: Context) {
         private val KEY_APP_SORT_ORDER = stringPreferencesKey("app_sort_order")
         private val KEY_PIN_ONLY_PACKAGES_JSON = stringPreferencesKey("pin_only_packages_json")
         private val KEY_NOTIFICATION_EXEMPT_PACKAGES_JSON = stringPreferencesKey("notification_exempt_packages_json")
+        private val KEY_CATEGORY_OVERRIDES_JSON = stringPreferencesKey("category_overrides_json")
+        private val KEY_USER_CUSTOM_TAGS_JSON = stringPreferencesKey("user_custom_tags_json")
+        private val KEY_APP_CUSTOM_TAGS_JSON = stringPreferencesKey("app_custom_tags_json")
         private val KEY_GLOBAL_FAILED_ATTEMPTS = intPreferencesKey("global_failed_attempts")
         private val KEY_GLOBAL_LOCKOUT_UNTIL_TIMESTAMP = longPreferencesKey("global_lockout_until_timestamp")
     }

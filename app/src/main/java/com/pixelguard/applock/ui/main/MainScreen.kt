@@ -43,6 +43,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CameraAlt
@@ -50,7 +51,9 @@ import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
@@ -61,6 +64,7 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.AlertDialog
@@ -80,12 +84,14 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.SwipeToDismissBox
@@ -95,6 +101,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import com.pixelguard.applock.data.model.isPinOnly
 import com.pixelguard.applock.data.model.isNotificationMasked
+import com.pixelguard.applock.data.model.getUserCustomTags
+import com.pixelguard.applock.data.model.isCustomized
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -114,6 +122,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -139,13 +148,18 @@ fun MainScreen(
     val allApps by viewModel.installedApps.collectAsState()
     val query by viewModel.searchQuery.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val selectedTag by viewModel.selectedTag.collectAsState()
     val isOnlyLocked by viewModel.isOnlyLockedFilterActive.collectAsState()
+    val isOnlyCustomized by viewModel.isOnlyCustomizedFilterActive.collectAsState()
     val permissionStatus by viewModel.permissionStatus.collectAsState()
     val intruders by viewModel.intruderRecords.collectAsState()
     val prefs by viewModel.preferences.collectAsState()
     val context = LocalContext.current
     val hapticManager = remember(context) { HapticManager(context) }
     var selectedAppForProfile by remember { mutableStateOf<AppItem?>(null) }
+    var showCreateTagDialog by remember { mutableStateOf(false) }
+    var tagToDelete by remember { mutableStateOf<String?>(null) }
+    val userTags = remember(prefs.userCustomTagsJson) { prefs.getUserCustomTags() }
     val systemAnimationsEnabled = remember(context) {
         try {
             android.provider.Settings.Global.getFloat(
@@ -160,6 +174,7 @@ fun MainScreen(
     val effectiveAnimations = prefs.isAnimationsEnabled && systemAnimationsEnabled
 
     val lockedCount = allApps.count { it.isLocked }
+    val customizedCount = remember(allApps, prefs) { allApps.count { prefs.isCustomized(it.packageName) } }
 
     Scaffold(
         topBar = {
@@ -444,6 +459,7 @@ fun MainScreen(
             item {
                 val categoryCounts = remember(allApps) { allApps.groupingBy { it.category }.eachCount() }
                 LazyRow(
+                    modifier = Modifier.testTag("filter_chips_row"),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     item {
@@ -471,17 +487,85 @@ fun MainScreen(
                     }
                     item {
                         FilterChip(
-                            selected = selectedCategory == null && !isOnlyLocked,
+                            selected = isOnlyCustomized,
+                            onClick = {
+                                hapticManager.tapClick(prefs.isHapticsEnabled)
+                                viewModel.toggleOnlyCustomizedFilter()
+                            },
+                            label = {
+                                Text(
+                                    text = "Customized ($customizedCount)",
+                                    fontWeight = if (isOnlyCustomized) FontWeight.Bold else FontWeight.Medium
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Tune,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                    item {
+                        FilterChip(
+                            selected = selectedCategory == null && selectedTag == null && !isOnlyLocked && !isOnlyCustomized,
                             onClick = {
                                 hapticManager.keypadTick(prefs.isHapticsEnabled)
                                 if (isOnlyLocked) viewModel.toggleOnlyLockedFilter()
+                                if (isOnlyCustomized) viewModel.toggleOnlyCustomizedFilter()
                                 viewModel.onCategorySelected(null)
+                                viewModel.onTagSelected(null)
                             },
                             label = { Text("All (${allApps.size})") },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Apps,
                                     contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                    items(userTags) { tag ->
+                        val count = remember(allApps, tag) {
+                            allApps.count { it.customTags.any { t -> t.equals(tag, ignoreCase = true) } }
+                        }
+                        FilterChip(
+                            selected = selectedTag == tag,
+                            onClick = {
+                                hapticManager.keypadTick(prefs.isHapticsEnabled)
+                                viewModel.onTagSelected(if (selectedTag == tag) null else tag)
+                            },
+                            label = { Text("#$tag ($count)") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Label,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                    item {
+                        AssistChip(
+                            onClick = {
+                                hapticManager.tapClick(prefs.isHapticsEnabled)
+                                showCreateTagDialog = true
+                            },
+                            label = {
+                                Text(
+                                    text = "+ Tag",
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "New Tag",
                                     modifier = Modifier.size(16.dp)
                                 )
                             },
@@ -592,6 +676,93 @@ fun MainScreen(
                                             fontWeight = FontWeight.SemiBold
                                         )
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Contextual Tag Batch Action Strip
+            if (selectedTag != null) {
+                item {
+                    val currentTag = selectedTag!!
+                    val tagApps = remember(allApps, currentTag) {
+                        allApps.filter { it.customTags.any { t -> t.equals(currentTag, ignoreCase = true) } }
+                    }
+                    val lockedInTag = tagApps.count { it.isLocked }
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (lockedInTag > 0) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.outline
+                                        )
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = "$lockedInTag of ${tagApps.size} in #$currentTag",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                if (lockedInTag < tagApps.size) {
+                                    FilledTonalButton(
+                                        onClick = {
+                                            hapticManager.tapClick(prefs.isHapticsEnabled)
+                                            viewModel.lockTag(currentTag)
+                                        },
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(text = "Lock All", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                                if (lockedInTag > 0) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            hapticManager.tapClick(prefs.isHapticsEnabled)
+                                            viewModel.unlockTag(currentTag)
+                                        },
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(text = "Unlock All", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                                IconButton(
+                                    onClick = { tagToDelete = currentTag },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DeleteOutline,
+                                        contentDescription = "Delete Tag",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
                             }
                         }
@@ -734,7 +905,7 @@ fun MainScreen(
             containerColor = MaterialTheme.colorScheme.surface
         ) {
             AppSecurityProfileSheetContent(
-                target = target,
+                target = currentTargetApp,
                 isTargetLocked = isTargetLocked,
                 currentSec = currentSec,
                 isPinOnlyActive = isPinOnlyActive,
@@ -755,9 +926,67 @@ fun MainScreen(
                 onSelectGraceSeconds = { sec ->
                     hapticManager.tapClick(prefs.isHapticsEnabled)
                     viewModel.setAppGracePeriod(target.packageName, sec)
+                },
+                userCustomTags = userTags,
+                onSelectCategory = { cat ->
+                    hapticManager.tapClick(prefs.isHapticsEnabled)
+                    viewModel.setCategoryOverride(target.packageName, cat)
+                },
+                onAddTag = { tag ->
+                    hapticManager.tapClick(prefs.isHapticsEnabled)
+                    viewModel.addTagToApp(target.packageName, tag)
+                },
+                onRemoveTag = { tag ->
+                    hapticManager.tapClick(prefs.isHapticsEnabled)
+                    viewModel.removeTagFromApp(target.packageName, tag)
+                },
+                onCreateAndAddTag = { newTag ->
+                    hapticManager.tapClick(prefs.isHapticsEnabled)
+                    viewModel.addTagToApp(target.packageName, newTag)
                 }
             )
         }
+    }
+
+    if (showCreateTagDialog) {
+        CreateTagDialog(
+            userTags = userTags,
+            onDismiss = { showCreateTagDialog = false },
+            onCreateTag = { clean ->
+                viewModel.createUserTag(clean)
+                showCreateTagDialog = false
+            }
+        )
+    }
+
+    if (tagToDelete != null) {
+        val tag = tagToDelete!!
+        AlertDialog(
+            onDismissRequest = { tagToDelete = null },
+            title = { Text("Delete Tag #$tag?") },
+            text = {
+                Text(
+                    text = "This will remove the tag from all assigned apps. The apps will not be unlocked.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteUserTag(tag)
+                        tagToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { tagToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
@@ -772,7 +1001,12 @@ fun AppSecurityProfileSheetContent(
     onToggleLock: (Boolean) -> Unit,
     onTogglePinOnly: (Boolean) -> Unit,
     onToggleNotifMasking: (Boolean) -> Unit,
-    onSelectGraceSeconds: (Int) -> Unit
+    onSelectGraceSeconds: (Int) -> Unit,
+    userCustomTags: List<String> = emptyList(),
+    onSelectCategory: (AppCategory?) -> Unit = {},
+    onAddTag: (String) -> Unit = {},
+    onRemoveTag: (String) -> Unit = {},
+    onCreateAndAddTag: (String) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -838,6 +1072,194 @@ fun AppSecurityProfileSheetContent(
         }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+        // Category & Tags Section
+        Text(
+            text = "Category & Tags",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val catIcon = when (target.category) {
+                            AppCategory.FINANCIAL -> Icons.Default.AccountBalance
+                            AppCategory.SOCIAL -> Icons.Default.ChatBubble
+                            AppCategory.SENSITIVE -> Icons.Default.PhotoLibrary
+                            AppCategory.SYSTEM -> Icons.Default.Settings
+                            AppCategory.OTHER -> Icons.Default.Apps
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = catIcon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Category",
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = target.category.displayName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Box {
+                        var categoryMenuExpanded by remember { mutableStateOf(false) }
+                        AssistChip(
+                            onClick = { categoryMenuExpanded = true },
+                            label = { Text("Change ▾", style = MaterialTheme.typography.labelMedium) },
+                            shape = RoundedCornerShape(10.dp)
+                        )
+
+                        DropdownMenu(
+                            expanded = categoryMenuExpanded,
+                            onDismissRequest = { categoryMenuExpanded = false }
+                        ) {
+                            AppCategory.values().forEach { cat ->
+                                DropdownMenuItem(
+                                    text = { Text(cat.displayName) },
+                                    leadingIcon = {
+                                        if (target.category == cat) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        } else {
+                                            Spacer(modifier = Modifier.size(18.dp))
+                                        }
+                                    },
+                                    onClick = {
+                                        categoryMenuExpanded = false
+                                        onSelectCategory(cat)
+                                    }
+                                )
+                            }
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Reset to Default", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                onClick = {
+                                    categoryMenuExpanded = false
+                                    onSelectCategory(null)
+                                }
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+
+                // Custom Tags Row
+                Text(
+                    text = "Custom Tags",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                var showAddTagDialog by remember { mutableStateOf(false) }
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items(target.customTags) { tag ->
+                        InputChip(
+                            selected = true,
+                            onClick = { onRemoveTag(tag) },
+                            label = { Text("#$tag", style = MaterialTheme.typography.labelSmall) },
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Remove tag",
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            },
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                    }
+
+                    item {
+                        AssistChip(
+                            onClick = { showAddTagDialog = true },
+                            label = { Text("+ Add Tag", style = MaterialTheme.typography.labelSmall) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            },
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                    }
+                }
+
+                if (showAddTagDialog) {
+                    AddTagToAppDialog(
+                        existingUserTags = userCustomTags,
+                        assignedTags = target.customTags,
+                        onDismiss = { showAddTagDialog = false },
+                        onAddExistingTag = { tag ->
+                            onAddTag(tag)
+                            showAddTagDialog = false
+                        },
+                        onCreateAndAddTag = { newTag ->
+                            onCreateAndAddTag(newTag)
+                            showAddTagDialog = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
 
         val rulesAlpha by animateFloatAsState(
             targetValue = if (isTargetLocked) 1.0f else 0.38f,
@@ -1033,6 +1455,153 @@ fun AppSecurityProfileSheetContent(
             )
         }
     }
+}
+
+@Composable
+fun AddTagToAppDialog(
+    existingUserTags: List<String>,
+    assignedTags: List<String>,
+    onDismiss: () -> Unit,
+    onAddExistingTag: (String) -> Unit,
+    onCreateAndAddTag: (String) -> Unit
+) {
+    var newTagInput by remember { mutableStateOf("") }
+    var inputError by remember { mutableStateOf<String?>(null) }
+    val availableExisting = remember(existingUserTags, assignedTags) {
+        existingUserTags.filterNot { existing ->
+            assignedTags.any { it.equals(existing, ignoreCase = true) }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Tag to App", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                if (availableExisting.isNotEmpty()) {
+                    Text(
+                        text = "Choose existing tag:",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(availableExisting) { tag ->
+                            SuggestionChip(
+                                onClick = { onAddExistingTag(tag) },
+                                label = { Text("#$tag", style = MaterialTheme.typography.labelSmall) },
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
+                Text(
+                    text = "Or create a new tag:",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = newTagInput,
+                    onValueChange = {
+                        newTagInput = it.filter { char -> char.isLetterOrDigit() || char == '_' || char == '-' }
+                        inputError = null
+                    },
+                    placeholder = { Text("Tag name (e.g. Work)") },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = null) },
+                    singleLine = true,
+                    isError = inputError != null,
+                    supportingText = inputError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } }
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val clean = newTagInput.trim()
+                    if (clean.isBlank()) {
+                        inputError = "Tag name cannot be empty"
+                    } else if (assignedTags.any { it.equals(clean, ignoreCase = true) }) {
+                        inputError = "App already has this tag"
+                    } else {
+                        onCreateAndAddTag(clean)
+                    }
+                }
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun CreateTagDialog(
+    userTags: List<String>,
+    onDismiss: () -> Unit,
+    onCreateTag: (String) -> Unit
+) {
+    var newTagName by remember { mutableStateOf("") }
+    var tagError by remember { mutableStateOf<String?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Create New Tag", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text(
+                    text = "Tags let you group apps (e.g. Work, Crypto, Kids) and lock or filter them in 1 tap.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                OutlinedTextField(
+                    value = newTagName,
+                    onValueChange = {
+                        newTagName = it.filter { char -> char.isLetterOrDigit() || char == '_' || char == '-' }
+                        tagError = null
+                    },
+                    placeholder = { Text("Tag name (e.g. Work)") },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = null) },
+                    singleLine = true,
+                    isError = tagError != null,
+                    supportingText = tagError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } }
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val clean = newTagName.trim()
+                    if (clean.isBlank()) {
+                        tagError = "Tag name cannot be empty"
+                    } else if (userTags.any { it.equals(clean, ignoreCase = true) }) {
+                        tagError = "Tag already exists"
+                    } else {
+                        onCreateTag(clean)
+                    }
+                }
+            ) {
+                Text("Create")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
@@ -1437,12 +2006,39 @@ fun AppListItem(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         Text(
                             text = app.category.displayName,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        if (app.customTags.isNotEmpty()) {
+                            app.customTags.take(2).forEach { tag ->
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f))
+                                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                                ) {
+                                    Text(
+                                        text = "#$tag",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                            }
+                            if (app.customTags.size > 2) {
+                                Text(
+                                    text = "+${app.customTags.size - 2}",
+                                    fontSize = 9.sp,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
                     }
                 }
 

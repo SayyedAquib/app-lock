@@ -55,7 +55,12 @@ data class LockPreferences(
 
     // 9. Per-App Security Profile overrides
     val pinOnlyPackagesJson: String = "[]",
-    val notificationExemptPackagesJson: String = "[]"
+    val notificationExemptPackagesJson: String = "[]",
+
+    // 10. Custom Categorization & User Tags
+    val categoryOverridesJson: String = "{}",
+    val userCustomTagsJson: String = "[]",
+    val appCustomTagsJson: String = "{}"
 )
 
 fun LockPreferences.isPinOnly(packageName: String): Boolean {
@@ -84,3 +89,80 @@ fun LockPreferences.isNotificationMasked(packageName: String): Boolean {
         !notificationExemptPackagesJson.contains("\"$packageName\"")
     }
 }
+
+fun LockPreferences.getOverriddenCategory(packageName: String): AppCategory? {
+    if (categoryOverridesJson.isBlank() || categoryOverridesJson == "{}") return null
+    return try {
+        val obj = org.json.JSONObject(categoryOverridesJson)
+        if (obj.has(packageName)) {
+            val name = obj.getString(packageName)
+            AppCategory.valueOf(name)
+        } else {
+            null
+        }
+    } catch (_: Exception) {
+        null
+    }
+}
+
+fun LockPreferences.getUserCustomTags(): List<String> {
+    if (userCustomTagsJson.isBlank() || userCustomTagsJson == "[]") return emptyList()
+    return try {
+        val array = org.json.JSONArray(userCustomTagsJson)
+        val list = mutableListOf<String>()
+        for (i in 0 until array.length()) {
+            val tag = array.optString(i)
+            if (tag.isNotBlank()) list.add(tag)
+        }
+        list
+    } catch (_: Exception) {
+        emptyList()
+    }
+}
+
+fun LockPreferences.getAppTags(packageName: String): List<String> {
+    if (appCustomTagsJson.isBlank() || appCustomTagsJson == "{}") return emptyList()
+    return try {
+        val obj = org.json.JSONObject(appCustomTagsJson)
+        if (obj.has(packageName)) {
+            val array = obj.getJSONArray(packageName)
+            val list = mutableListOf<String>()
+            for (i in 0 until array.length()) {
+                val tag = array.optString(i)
+                if (tag.isNotBlank()) list.add(tag)
+            }
+            list
+        } else {
+            emptyList()
+        }
+    } catch (_: Exception) {
+        emptyList()
+    }
+}
+
+fun LockPreferences.isCustomized(packageName: String): Boolean {
+    val hasCustomGrace = try {
+        if (appGracePeriodsJson.isNotBlank() && appGracePeriodsJson != "{}") {
+            org.json.JSONObject(appGracePeriodsJson).has(packageName)
+        } else false
+    } catch (_: Exception) { false }
+
+    val isPinOnlyMode = isPinOnly(packageName)
+
+    val isNotifExempt = try {
+        if (notificationExemptPackagesJson.isNotBlank() && notificationExemptPackagesJson != "[]") {
+            val array = org.json.JSONArray(notificationExemptPackagesJson)
+            var found = false
+            for (i in 0 until array.length()) {
+                if (array.optString(i) == packageName) { found = true; break }
+            }
+            found
+        } else false
+    } catch (_: Exception) { false }
+
+    val hasCategoryOverride = getOverriddenCategory(packageName) != null
+    val hasCustomTags = getAppTags(packageName).isNotEmpty()
+
+    return hasCustomGrace || isPinOnlyMode || isNotifExempt || hasCategoryOverride || hasCustomTags
+}
+

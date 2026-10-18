@@ -12,6 +12,9 @@ import com.pixelguard.applock.data.model.AppItem
 import com.pixelguard.applock.data.model.AppSortOrder
 import com.pixelguard.applock.data.model.IntruderRecord
 import com.pixelguard.applock.data.model.LockPreferences
+import com.pixelguard.applock.data.model.getAppTags
+import com.pixelguard.applock.data.model.getOverriddenCategory
+import com.pixelguard.applock.data.model.isCustomized
 import com.pixelguard.applock.data.repository.AppLockRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,8 +38,19 @@ class MainViewModel(
 ) : ViewModel() {
 
     private val _installedApps = MutableStateFlow<List<AppItem>>(emptyList())
-    val allApps: StateFlow<List<AppItem>> = combine(_installedApps, repository.lockedPackages) { apps, locked ->
-        apps.map { it.copy(isLocked = locked.contains(it.packageName)) }
+    val preferences: StateFlow<LockPreferences> = repository.preferences
+        .stateIn(viewModelScope, SharingStarted.Eagerly, LockPreferences())
+
+    val allApps: StateFlow<List<AppItem>> = combine(_installedApps, repository.lockedPackages, preferences) { apps, locked, prefs ->
+        apps.map { app ->
+            val overriddenCategory = prefs.getOverriddenCategory(app.packageName)
+            val tags = prefs.getAppTags(app.packageName)
+            app.copy(
+                isLocked = locked.contains(app.packageName),
+                category = overriddenCategory ?: app.category,
+                customTags = tags
+            )
+        }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val installedApps: StateFlow<List<AppItem>> = allApps
@@ -47,16 +61,19 @@ class MainViewModel(
     private val _selectedCategory = MutableStateFlow<AppCategory?>(null)
     val selectedCategory: StateFlow<AppCategory?> = _selectedCategory.asStateFlow()
 
+    private val _selectedTag = MutableStateFlow<String?>(null)
+    val selectedTag: StateFlow<String?> = _selectedTag.asStateFlow()
+
     private val _isOnlyLockedFilterActive = MutableStateFlow(false)
     val isOnlyLockedFilterActive: StateFlow<Boolean> = _isOnlyLockedFilterActive.asStateFlow()
+
+    private val _isOnlyCustomizedFilterActive = MutableStateFlow(false)
+    val isOnlyCustomizedFilterActive: StateFlow<Boolean> = _isOnlyCustomizedFilterActive.asStateFlow()
 
     private val _permissionStatus = MutableStateFlow(
         PermissionStatus(hasOverlayPermission = false, hasAccessibilityPermission = false, hasNotificationPermission = false)
     )
     val permissionStatus: StateFlow<PermissionStatus> = _permissionStatus.asStateFlow()
-
-    val preferences: StateFlow<LockPreferences> = repository.preferences
-        .stateIn(viewModelScope, SharingStarted.Eagerly, LockPreferences())
 
     val intruderRecords: StateFlow<List<IntruderRecord>> = repository.intruderRecords
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -64,19 +81,39 @@ class MainViewModel(
     val hasPinSet: StateFlow<Boolean?> = repository.hasPinSetFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val filteredApps: StateFlow<List<AppItem>> = combine(
-        allApps,
+    private data class AppFilterCriteria(
+        val query: String,
+        val category: AppCategory?,
+        val tag: String?,
+        val onlyLocked: Boolean,
+        val onlyCustomized: Boolean
+    )
+
+    private val _filterCriteria = combine(
         _searchQuery,
         _selectedCategory,
+        _selectedTag,
         _isOnlyLockedFilterActive,
+        _isOnlyCustomizedFilterActive
+    ) { query, category, tag, onlyLocked, onlyCustomized ->
+        AppFilterCriteria(query, category, tag, onlyLocked, onlyCustomized)
+    }
+
+    val filteredApps: StateFlow<List<AppItem>> = combine(
+        allApps,
+        _filterCriteria,
         preferences
-    ) { appsWithLock, query, category, onlyLocked, prefs ->
+    ) { appsWithLock, criteria, prefs ->
         appsWithLock
             .filter { app ->
-                val matchesQuery = query.isBlank() || app.appName.contains(query, ignoreCase = true)
-                val matchesCategory = category == null || app.category == category
-                val matchesLocked = !onlyLocked || app.isLocked
-                matchesQuery && matchesCategory && matchesLocked
+                val matchesQuery = criteria.query.isBlank() ||
+                    app.appName.contains(criteria.query, ignoreCase = true) ||
+                    app.packageName.contains(criteria.query, ignoreCase = true)
+                val matchesCategory = criteria.category == null || app.category == criteria.category
+                val matchesTag = criteria.tag == null || app.customTags.any { it.equals(criteria.tag, ignoreCase = true) }
+                val matchesLocked = !criteria.onlyLocked || app.isLocked
+                val matchesCustomized = !criteria.onlyCustomized || prefs.isCustomized(app.packageName)
+                matchesQuery && matchesCategory && matchesTag && matchesLocked && matchesCustomized
             }
             .let { list ->
                 when (prefs.appSortOrder) {
@@ -109,10 +146,24 @@ class MainViewModel(
 
     fun onCategorySelected(category: AppCategory?) {
         _selectedCategory.value = category
+        if (category != null) {
+            _selectedTag.value = null
+        }
+    }
+
+    fun onTagSelected(tag: String?) {
+        _selectedTag.value = tag
+        if (tag != null) {
+            _selectedCategory.value = null
+        }
     }
 
     fun toggleOnlyLockedFilter() {
         _isOnlyLockedFilterActive.value = !_isOnlyLockedFilterActive.value
+    }
+
+    fun toggleOnlyCustomizedFilter() {
+        _isOnlyCustomizedFilterActive.value = !_isOnlyCustomizedFilterActive.value
     }
 
     fun setSortOrder(order: AppSortOrder) {
@@ -124,7 +175,9 @@ class MainViewModel(
     fun resetFilters() {
         _searchQuery.value = ""
         _selectedCategory.value = null
+        _selectedTag.value = null
         _isOnlyLockedFilterActive.value = false
+        _isOnlyCustomizedFilterActive.value = false
     }
 
     fun toggleAppLock(packageName: String, isCurrentlyLocked: Boolean) {
@@ -260,6 +313,57 @@ class MainViewModel(
     fun clearAllIntruders() {
         viewModelScope.launch {
             repository.clearAllIntruderRecords()
+        }
+    }
+
+    fun setCategoryOverride(packageName: String, category: AppCategory?) {
+        viewModelScope.launch {
+            repository.setCategoryOverride(packageName, category)
+        }
+    }
+
+    fun createUserTag(tag: String) {
+        viewModelScope.launch {
+            repository.createUserTag(tag)
+        }
+    }
+
+    fun deleteUserTag(tag: String) {
+        viewModelScope.launch {
+            if (_selectedTag.value?.equals(tag, ignoreCase = true) == true) {
+                _selectedTag.value = null
+            }
+            repository.deleteUserTag(tag)
+        }
+    }
+
+    fun addTagToApp(packageName: String, tag: String) {
+        viewModelScope.launch {
+            repository.addTagToApp(packageName, tag)
+        }
+    }
+
+    fun removeTagFromApp(packageName: String, tag: String) {
+        viewModelScope.launch {
+            repository.removeTagFromApp(packageName, tag)
+        }
+    }
+
+    fun lockTag(tag: String) {
+        viewModelScope.launch {
+            val packages = allApps.value
+                .filter { it.customTags.any { t -> t.equals(tag, ignoreCase = true) } }
+                .map { it.packageName }
+            repository.lockAllSensitiveApps(packages)
+        }
+    }
+
+    fun unlockTag(tag: String) {
+        viewModelScope.launch {
+            val packages = allApps.value
+                .filter { it.customTags.any { t -> t.equals(tag, ignoreCase = true) } }
+                .map { it.packageName }
+            repository.unlockPackages(packages)
         }
     }
 

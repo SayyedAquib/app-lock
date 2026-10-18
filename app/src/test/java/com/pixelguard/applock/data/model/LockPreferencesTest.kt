@@ -48,6 +48,65 @@ class LockPreferencesTest {
         assertEquals(AppSortOrder.NAME_ASC, prefs.appSortOrder)
         assertEquals("[]", prefs.pinOnlyPackagesJson)
         assertEquals("[]", prefs.notificationExemptPackagesJson)
+        assertEquals("{}", prefs.categoryOverridesJson)
+        assertEquals("[]", prefs.userCustomTagsJson)
+        assertEquals("{}", prefs.appCustomTagsJson)
+    }
+
+    @Test
+    fun testGetOverriddenCategory_whenConfigured_returnsCategory() {
+        val prefs = LockPreferences(
+            categoryOverridesJson = """{"com.binance.app": "FINANCIAL", "com.custom.notes": "SENSITIVE"}"""
+        )
+        assertEquals(AppCategory.FINANCIAL, prefs.getOverriddenCategory("com.binance.app"))
+        assertEquals(AppCategory.SENSITIVE, prefs.getOverriddenCategory("com.custom.notes"))
+        assertEquals(null, prefs.getOverriddenCategory("com.unknown.app"))
+    }
+
+    @Test
+    fun testGetUserCustomTags_whenConfigured_returnsTagsList() {
+        val prefs = LockPreferences(
+            userCustomTagsJson = """["Work", "Kids", "Crypto"]"""
+        )
+        val tags = prefs.getUserCustomTags()
+        assertEquals(3, tags.size)
+        assertEquals(listOf("Work", "Kids", "Crypto"), tags)
+    }
+
+    @Test
+    fun testGetAppTags_whenConfigured_returnsAssignedTags() {
+        val prefs = LockPreferences(
+            appCustomTagsJson = """{"com.slack": ["Work", "Messaging"], "com.binance": ["Crypto"]}"""
+        )
+        assertEquals(listOf("Work", "Messaging"), prefs.getAppTags("com.slack"))
+        assertEquals(listOf("Crypto"), prefs.getAppTags("com.binance"))
+        assertEquals(emptyList<String>(), prefs.getAppTags("com.other.app"))
+    }
+
+    @Test
+    fun testIsCustomized_identifiesCustomizedApps() {
+        val defaultPrefs = LockPreferences()
+        assertFalse(defaultPrefs.isCustomized("com.whatsapp"))
+
+        val withCategoryOverride = LockPreferences(
+            categoryOverridesJson = """{"com.whatsapp": "SENSITIVE"}"""
+        )
+        assertTrue(withCategoryOverride.isCustomized("com.whatsapp"))
+
+        val withCustomTags = LockPreferences(
+            appCustomTagsJson = """{"com.whatsapp": ["Personal"]}"""
+        )
+        assertTrue(withCustomTags.isCustomized("com.whatsapp"))
+
+        val withCustomGrace = LockPreferences(
+            appGracePeriodsJson = """{"com.whatsapp": 60}"""
+        )
+        assertTrue(withCustomGrace.isCustomized("com.whatsapp"))
+
+        val withPinOnly = LockPreferences(
+            pinOnlyPackagesJson = """["com.whatsapp"]"""
+        )
+        assertTrue(withPinOnly.isCustomized("com.whatsapp"))
     }
 
     @Test

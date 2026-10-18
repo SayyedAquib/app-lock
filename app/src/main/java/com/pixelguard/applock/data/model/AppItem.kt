@@ -11,5 +11,6 @@ data class AppItem(
     val icon: Drawable? = null,
     val iconBitmap: Bitmap? = null,
     val category: AppCategory = AppCategory.OTHER,
-    val isLocked: Boolean = false
+    val isLocked: Boolean = false,
+    val customTags: List<String> = emptyList()
 )

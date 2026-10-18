@@ -10,6 +10,8 @@ import com.pixelguard.applock.data.model.AppCategory
 import com.pixelguard.applock.data.model.AppItem
 import com.pixelguard.applock.data.model.IntruderRecord
 import com.pixelguard.applock.data.model.LockPreferences
+import com.pixelguard.applock.data.model.getAppTags
+import com.pixelguard.applock.data.model.getUserCustomTags
 import android.graphics.Bitmap
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
@@ -278,5 +280,108 @@ class AppLockRepositoryImpl(
     override suspend fun enableRecommendedShields() {
         val current = preferences.first()
         updatePreferences(current.copy(isSettingsProtected = true, isRecentsMaskingEnabled = true))
+    }
+
+    override suspend fun setCategoryOverride(packageName: String, category: AppCategory?) {
+        val current = preferences.first()
+        val obj = try {
+            JSONObject(current.categoryOverridesJson)
+        } catch (_: Exception) {
+            JSONObject()
+        }
+        if (category == null) {
+            obj.remove(packageName)
+        } else {
+            obj.put(packageName, category.name)
+        }
+        updatePreferences(current.copy(categoryOverridesJson = obj.toString()))
+    }
+
+    override suspend fun createUserTag(tag: String) {
+        val trimmed = tag.trim()
+        if (trimmed.isBlank()) return
+        val current = preferences.first()
+        val tags = current.getUserCustomTags().toMutableList()
+        if (!tags.any { it.equals(trimmed, ignoreCase = true) }) {
+            tags.add(trimmed)
+            val array = JSONArray(tags)
+            updatePreferences(current.copy(userCustomTagsJson = array.toString()))
+        }
+    }
+
+    override suspend fun deleteUserTag(tag: String) {
+        val current = preferences.first()
+        val tags = current.getUserCustomTags().filterNot { it.equals(tag, ignoreCase = true) }
+        val array = JSONArray(tags)
+
+        val appTagsObj = try {
+            JSONObject(current.appCustomTagsJson)
+        } catch (_: Exception) {
+            JSONObject()
+        }
+        val keys = appTagsObj.keys()
+        val newAppTagsObj = JSONObject()
+        while (keys.hasNext()) {
+            val pkg = keys.next()
+            val arr = appTagsObj.getJSONArray(pkg)
+            val updatedList = mutableListOf<String>()
+            for (i in 0 until arr.length()) {
+                val t = arr.getString(i)
+                if (!t.equals(tag, ignoreCase = true)) {
+                    updatedList.add(t)
+                }
+            }
+            if (updatedList.isNotEmpty()) {
+                newAppTagsObj.put(pkg, JSONArray(updatedList))
+            }
+        }
+
+        updatePreferences(current.copy(
+            userCustomTagsJson = array.toString(),
+            appCustomTagsJson = newAppTagsObj.toString()
+        ))
+    }
+
+    override suspend fun addTagToApp(packageName: String, tag: String) {
+        val trimmed = tag.trim()
+        if (trimmed.isBlank()) return
+        val current = preferences.first()
+
+        val userTags = current.getUserCustomTags().toMutableList()
+        if (!userTags.any { it.equals(trimmed, ignoreCase = true) }) {
+            userTags.add(trimmed)
+        }
+
+        val appTagsObj = try {
+            JSONObject(current.appCustomTagsJson)
+        } catch (_: Exception) {
+            JSONObject()
+        }
+        val existingTags = current.getAppTags(packageName).toMutableList()
+        if (!existingTags.any { it.equals(trimmed, ignoreCase = true) }) {
+            existingTags.add(trimmed)
+        }
+        appTagsObj.put(packageName, JSONArray(existingTags))
+
+        updatePreferences(current.copy(
+            userCustomTagsJson = JSONArray(userTags).toString(),
+            appCustomTagsJson = appTagsObj.toString()
+        ))
+    }
+
+    override suspend fun removeTagFromApp(packageName: String, tag: String) {
+        val current = preferences.first()
+        val appTagsObj = try {
+            JSONObject(current.appCustomTagsJson)
+        } catch (_: Exception) {
+            JSONObject()
+        }
+        val existingTags = current.getAppTags(packageName).filterNot { it.equals(tag, ignoreCase = true) }
+        if (existingTags.isEmpty()) {
+            appTagsObj.remove(packageName)
+        } else {
+            appTagsObj.put(packageName, JSONArray(existingTags))
+        }
+        updatePreferences(current.copy(appCustomTagsJson = appTagsObj.toString()))
     }
 }

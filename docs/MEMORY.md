@@ -247,6 +247,13 @@
      - Expanded test suite to **131 automated tests** (51 Compose UI + 80 Unit & Service), 100% passing.
      - Compiled production release APK (`app-release.apk`).
      - Addresses user concern about the standard Android security reminder notification.
+ 48. **Custom Categorization, User Tags, Productivity Polish & Permanent Calculator Disguise Ban (UX & Architecture)**:
+     - **DataStore Schemas**: Added `categoryOverridesJson = "{}"`, `userCustomTagsJson = "[]"`, `appCustomTagsJson = "{}"` with backwards-compatible defaults, and extension functions `getOverriddenCategory()`, `getUserCustomTags()`, `getAppTags()`, and `isCustomized()`.
+     - **Repository & Test Fakes**: Added `setCategoryOverride`, `createUserTag`, `deleteUserTag`, `addTagToApp`, and `removeTagFromApp` implemented across `AppLockRepositoryImpl` and `FakeAppLockRepository`.
+     - **ViewModel**: Formulated intermediate `AppFilterCriteria` to resolve Flow.combine 5-flow parameter limits without unsafe casts. Added dual search matching (`appName` or `packageName`), reactive tag management, and tag batch actions (`lockTag`, `unlockTag`).
+     - **UI Polish (`MainScreen.kt`)**: Added pinned `Customized ($count)` FilterChip, dynamic user tag chips (`#$tag ($count)`), `+ Tag` AssistChip with `CreateTagDialog`, Contextual Tag Action Strip (`X of Y in #$tag`, `[Lock All]`, `[Unlock All]`, delete tag action), compact tag badges in `AppListItem`, and a dedicated "Category & Tags" section in `AppSecurityProfileSheetContent` (category selector capsule with "Reset to Default", tag chips with `AddTagToAppDialog`).
+     - **Permanent Calculator Disguise Ban**: Formally banned proposing, suggesting, or implementing calculator launcher icons, fake math passcodes, or stealth cloaks per user mandate.
+     - **Test Suite**: Expanded to **142 automated tests** (54 Compose UI + 88 Unit & Service), 100% passing.
 
 ## Known Problems
 - None in active runtime. On Android 17, initial sideloading requires the user to tap "Allow restricted settings" in App Info for Accessibility Service toggle activation (interactive guidance provided in Onboarding).
@@ -280,9 +287,11 @@
 - Decided on Material 3 Expressive & Fluid Motion Architecture (ADR 033).
 - Decided on Zero-Trust Master Authentication & OWASP MASVS Security Hardening (ADR 034).
 - Decided on Dual-Theme Architecture, Adaptive Semantic Tokens & Automated WCAG Contrast Verification (ADR 035).
+- Decided on Security & Privacy FAQ Card & Accessibility Service Description Improvement (ADR 036).
+- Decided on Custom App Categorization, User Tags, Intermediate AppFilterCriteria, and Permanent Ban on Calculator Launcher Disguises (ADR 037).
 
 ## Next Steps
-- Explore Roadmap feature: Calculator / Notes Stealth Disguise mode.
+- Per strict user mandate, calculator launcher disguises and fake calculation passcodes are permanently banned across all future development.
 - Optional on-device Compose instrumentation tests (`connectedDebugAndroidTest`) on physical Pixel 9.
 
 ## Things to Be Careful About

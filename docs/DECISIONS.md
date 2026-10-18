@@ -1154,3 +1154,48 @@ Implemented a two-pronged approach:
 - Consistent with the app's zero-cloud, on-device-only security architecture.
 - 100% test pass rate maintained with test suite expansion to 131 tests (51 Compose UI + 80 Unit & Service).
 
+---
+
+## ADR 037: Custom App Categorization, User Tags, Productivity Polish & Permanent Calculator Disguise Ban
+### Date
+2026-10-18
+### Status
+Accepted
+### Context
+Apps were previously statically locked into default system/market categories (`FINANCIAL`, `SOCIAL`, `SENSITIVE`, `SYSTEM`, `OTHER`). Users had no way to reorganize apps according to custom personal workflows (e.g., classifying a notes app containing banking recovery seeds as Financial, or tagging multiple apps as `#Work`, `#Kids`, `#Crypto`).
+In addition, stealth disguise mechanisms (such as disguising Pixel Guard behind a functional calculator launcher icon with secret PIN calculation unlock) were proposed, evaluated, and permanently banned per strict user mandate to maintain system-grade utility trust and avoid deceptive app disguises.
+### Options Considered
+1. Static categories with no customization or user tags. (Rejected: limits user organization and productivity.)
+2. Calculator launcher icon stealth disguise with secret PIN calculation unlock. (Permanently banned: compromises trust, introduces gimmicky deceptive patterns, and rejected by user mandate.)
+3. Native Clean Architecture Custom Categorization & User Tags with DataStore JSON persistence, reactive Flow pipeline, and batch action parity. (Adopted: 100% backwards-compatible, zero-latency, high productivity.)
+### Decision
+1. **Backwards-Compatible DataStore JSON Schema (`LockPreferences.kt` & `PreferencesDataStore.kt`)**:
+   - `categoryOverridesJson = "{}"`: Persists per-package category overrides (`Map<String, String>`).
+   - `userCustomTagsJson = "[]"`: Persists list of user-created tag names (`List<String>`).
+   - `appCustomTagsJson = "{}"`: Persists mapping of package names to assigned tags (`Map<String, List<String>>`).
+   - Added extension helpers: `getOverriddenCategory()`, `getUserCustomTags()`, `getAppTags()`, and `isCustomized()`.
+2. **Repository Layer Operations (`AppLockRepository.kt` & `AppLockRepositoryImpl.kt`)**:
+   - Added `setCategoryOverride(packageName, category?)` with null to reset to default.
+   - Added `createUserTag(tag)`, `deleteUserTag(tag)`, `addTagToApp(packageName, tag)`, and `removeTagFromApp(packageName, tag)`.
+   - Updated `FakeAppLockRepository` for deterministic JVM testing.
+3. **Reactive Filter Pipeline (`MainViewModel.kt`)**:
+   - Encapsulated 5 filter states (`query`, `category`, `tag`, `onlyLocked`, `onlyCustomized`) into intermediate `AppFilterCriteria` to resolve Kotlin Coroutines `combine(...)` 5-flow parameter limit without unsafe casts.
+   - Combined `allApps`, `_filterCriteria`, and `preferences` with O(1) in-memory lookups.
+   - Dual search matching: queries check both `appName` and `packageName` (e.g. searching `"vending"` matches Google Play Store).
+   - Added tag batch actions (`lockTag`, `unlockTag`) and automatic tag unselection when deleting an active tag.
+4. **Dashboard & UI Polish (`MainScreen.kt`)**:
+   - Pinned `Customized ($customizedCount)` FilterChip alongside `Locked Only`.
+   - Dynamic user tag chips (`#$tag ($count)`) and `+ Tag` AssistChip.
+   - Contextual Tag Action Strip (`X of Y protected in #$tag`, `[Lock All]`, `[Unlock All]`, delete tag action).
+   - `CreateTagDialog` and delete tag confirmation dialog.
+   - Category row in `AppListItem` displays compact tag badges (`#$tag`).
+   - Dedicated "Category & Tags" section in `AppSecurityProfileSheetContent` with interactive category dropdown capsule, "Reset to Default" action, and tag chips with `AddTagToAppDialog`.
+5. **Permanent Rejection of Calculator Disguise**:
+   - Codified strict ban in project rules against calculator cloaks, fake math calculations, and app disguise icons.
+### Consequences
+- High-efficiency app organization and batch management for complex multi-app security policies.
+- Zero performance impact on 120Hz display pacing; zero main-thread IO or JSON serialization in list rendering.
+- Fully tested across unit tests and Robolectric Compose UI tests (142 tests passing, 0 failures).
+- Complete architectural documentation across all governance files.
+
+

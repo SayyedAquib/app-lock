@@ -16,11 +16,11 @@ Pixel Guard enforces a pragmatic, high-assurance testing strategy. Because it is
   - `io.mockk:mockk:1.13.13`: Kotlin-first mocking for Android platform components and context services.
 - **Device Hardware Testing**: Android Debug Bridge (ADB) via PowerShell on Google Pixel 9 (Android 17, 120Hz display).
 
-## Test Suite Structure (131 Total Tests, 100% Passing)
+## Test Suite Structure (142 Total Tests, 100% Passing)
 
-### 1. Presentation & Compose UI Tests (51 tests)
+### 1. Presentation & Compose UI Tests (54 tests)
 All UI tests run via Compose UI Rule + Robolectric on the JVM with exact Pixel 9 display metrics:
-- **`MainScreenUiTest`** (16 tests):
+- **`MainScreenUiTest`** (19 tests):
   - TopAppBar header, Titan M2 armor branding, and Intruder selfie count badge.
   - Permission Banner conditionally displayed when accessibility/overlay is missing, and tap triggers navigation.
   - Permission Banner hidden when all permissions are granted.
@@ -29,6 +29,8 @@ All UI tests run via Compose UI Rule + Robolectric on the JVM with exact Pixel 9
   - Contextual category batch action strip (`Lock All` in category).
   - Contextual category batch action strip (`Unlock All` in category).
   - "Locked Only" toggle filter and contextual empty state verification.
+  - "Customized" toggle filter chip and customized count badge.
+  - Custom tag chip `#Finance (1)` filtering and app visibility.
   - Contextual empty state recovery button ("Clear search" / "Reset filters").
   - Lock icon toggle interaction flipping locked state.
   - Hero Security Health Gauge batch action (`Lock Critical`).
@@ -36,6 +38,7 @@ All UI tests run via Compose UI Rule + Robolectric on the JVM with exact Pixel 9
   - Sort dropdown assist chip selecting `Locked First` sort order.
   - AppSecurityProfileSheet bottom sheet opening when app row is clicked.
   - AppSecurityProfileSheetContent selects grace period duration (e.g. 30 seconds).
+  - AppSecurityProfileSheetContent displays Category & Tags section, interactive category selector capsule, and custom tags.
 - **`LockOverlayScreenUiTest`** (10 tests):
   - Target application name, icon, and "Secured by Pixel Guard" shield badge.
   - 4-digit PIN keypad input and automatic submission on 4th digit.
@@ -78,7 +81,7 @@ All UI tests run via Compose UI Rule + Robolectric on the JVM with exact Pixel 9
   - Photo preview modal dialog opening and closing.
   - Back navigation callback.
 
-### 2. Unit & Service Tests (72 tests)
+### 2. Unit & Service Tests (88 tests)
 Unit and service tests reside in `app/src/test/java/` and validate non-UI modules, cryptography, background event filtering, and business logic:
 - **`AppLockAccessibilityServiceTest`** (12 tests):
   - `TYPE_WINDOWS_CHANGED` gesture navigation handle immunity from Pixel Launcher (`com.google.android.apps.nexuslauncher`).
@@ -96,8 +99,9 @@ Unit and service tests reside in `app/src/test/java/` and validate non-UI module
   - Dynamic `ACTION_SCREEN_OFF` broadcast receiver revokes foreground session immediately.
 - **`CryptoManagerTest`** (8 tests): PBKDF2/SHA-256 hashing, distinct salts, constant-time comparison, Keystore crypto operations.
 - **`SessionManagerTest`** (26 tests): Grace period math, Night Lockdown scheduling boundaries, per-app priority, flicker buffer protection, active foreground session retention during continuous in-app usage, exit-based grace countdown, and screen-off session revocation.
-- **`LockPreferencesTest`** (9 tests): Default value invariants (`isSettingsProtected == false`, `isRecentsMaskingEnabled == false`, `isBiometricsEnabled == true`, etc.), `AppSortOrder` and `LockType` enum completeness, mutation copy isolation, JSON-based PIN-only and notification mask evaluations.
-- **`MainViewModelTest`** (17 tests): Reactive state flow combining, search/category filtering, sorting, batch actions, PIN configuration, grace period serialization.
+- **`LockPreferencesTest`** (13 tests): Default value invariants (`isSettingsProtected == false`, `isRecentsMaskingEnabled == false`, `isBiometricsEnabled == true`, etc.), `AppSortOrder` and `LockType` enum completeness, mutation copy isolation, JSON-based PIN-only and notification mask evaluations, category overrides parsing, custom user & app tag serialization, and `isCustomized()` policy checks.
+- **`MainViewModelTest`** (21 tests): Reactive state flow combining, dual search query matching (`appName` and `packageName`), category filtering and dynamic category override, custom tag lifecycle & batch actions, customized filter, sorting, batch actions, PIN configuration, grace period serialization.
+- **`DualThemeContrastTest`** (8 tests): Mathematical WCAG 2.1 AA/AAA contrast ratios and theme rendering across screens in Light and Dark modes.
 
 ## Integration Testing
 - **DataStore Integration**: Validates reading and writing to in-memory `DataStore` preferences without deadlocks.

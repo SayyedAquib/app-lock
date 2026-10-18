@@ -90,4 +90,5 @@
 - **DO NOT** hardcode non-theme colors for layout backgrounds or typography.
 - **DO NOT** hardcode default or fallback PIN strings (e.g. "1234") — enforce user onboarding setup.
 - **DO NOT** emit raw package names or sensitive telemetry in `Log.i/d` without `BuildConfig.DEBUG` guards.
+- **DO NOT** suggest, propose, or build calculator launcher icon disguises, fake calculator cloaks, or hidden passcode calculations. This constraint is permanent across all versions.
 

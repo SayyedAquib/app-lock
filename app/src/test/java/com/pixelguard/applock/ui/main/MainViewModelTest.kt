@@ -421,4 +421,114 @@ class MainViewModelTest {
             assertThat(emptyList).isEmpty()
         }
     }
+
+    @Test
+    fun search_matchesBothAppNameAndPackageName() = runTest {
+        viewModel.filteredApps.test {
+            awaitItem()
+            advanceUntilIdle()
+            awaitItem()
+
+            // Search by package name substring "gallery" (absent from appName "Secret Photos")
+            viewModel.onSearchQueryChanged("gallery")
+            advanceUntilIdle()
+            val matches = awaitItem()
+            assertThat(matches).hasSize(1)
+            assertThat(matches.first().packageName).isEqualTo("com.pixelguard.gallery")
+
+            // Clear search
+            viewModel.onSearchQueryChanged("")
+            advanceUntilIdle()
+            awaitItem()
+        }
+    }
+
+    @Test
+    fun categoryOverride_dynamicallyUpdatesCategoryInAllApps() = runTest {
+        viewModel.allApps.test {
+            awaitItem()
+            advanceUntilIdle()
+            val initial = awaitItem()
+            val notesInitial = initial.first { it.packageName == "com.pixelguard.notes" }
+            assertThat(notesInitial.category).isEqualTo(AppCategory.OTHER)
+
+            // Reclassify Daily Notes from OTHER to FINANCIAL
+            viewModel.setCategoryOverride("com.pixelguard.notes", AppCategory.FINANCIAL)
+            advanceUntilIdle()
+            val updated = awaitItem()
+            val notesUpdated = updated.first { it.packageName == "com.pixelguard.notes" }
+            assertThat(notesUpdated.category).isEqualTo(AppCategory.FINANCIAL)
+
+            // Reset back to default
+            viewModel.setCategoryOverride("com.pixelguard.notes", null)
+            advanceUntilIdle()
+            val reset = awaitItem()
+            val notesReset = reset.first { it.packageName == "com.pixelguard.notes" }
+            assertThat(notesReset.category).isEqualTo(AppCategory.OTHER)
+        }
+    }
+
+    @Test
+    fun customTags_lifecycle_creationAssignmentFilteringAndBatchLocking() = runTest {
+        viewModel.filteredApps.test {
+            awaitItem()
+            advanceUntilIdle()
+            awaitItem()
+
+            // Assign tag "Personal" to Secure Chat
+            viewModel.addTagToApp("com.pixelguard.chat", "Personal")
+            advanceUntilIdle()
+            val withTag = awaitItem()
+            val chatApp = withTag.first { it.packageName == "com.pixelguard.chat" }
+            assertThat(chatApp.customTags).contains("Personal")
+
+            // Filter by tag "Personal"
+            viewModel.onTagSelected("Personal")
+            advanceUntilIdle()
+            val filteredByTag = awaitItem()
+            assertThat(filteredByTag).hasSize(1)
+            assertThat(filteredByTag.first().packageName).isEqualTo("com.pixelguard.chat")
+
+            // Batch lock tag
+            viewModel.lockTag("Personal")
+            advanceUntilIdle()
+            val lockedTagApps = awaitItem()
+            assertThat(lockedTagApps.first().isLocked).isTrue()
+
+            // Batch unlock tag
+            viewModel.unlockTag("Personal")
+            advanceUntilIdle()
+            val unlockedTagApps = awaitItem()
+            assertThat(unlockedTagApps.first().isLocked).isFalse()
+
+            // Delete tag "Personal"
+            viewModel.deleteUserTag("Personal")
+            advanceUntilIdle()
+            // Selected tag should automatically be cleared
+            assertThat(viewModel.selectedTag.value).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun onlyCustomizedFilter_filtersOnlyAppsWithConfiguredPolicies() = runTest {
+        viewModel.filteredApps.test {
+            awaitItem()
+            advanceUntilIdle()
+            awaitItem()
+
+            // Daily Notes has a custom grace period
+            viewModel.setAppGracePeriod("com.pixelguard.notes", 60)
+            advanceUntilIdle()
+
+            // Activate customized filter
+            viewModel.toggleOnlyCustomizedFilter()
+            advanceUntilIdle()
+            val customizedOnly = awaitItem()
+
+            // Only Daily Notes should appear
+            assertThat(customizedOnly.map { it.packageName }).containsExactly("com.pixelguard.notes")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }

@@ -117,10 +117,16 @@ Standard 4dp/8dp grid system:
 
 ### Navigation & Chrome
 - TopAppBar includes back arrow button, brand title, live status count (`Pixel 9 Armor • $lockedCount Protected`), and shield action icon.
-- Consolidated **Search & Sort Strip**: Single horizontal row combining an edge-to-edge search bar with a compact sort assist chip (`Sort: A–Z`), accompanied by category pills with pinned `Locked Only ($count)` chip, saving 42dp of above-the-fold viewport height.
+- Consolidated **Search & Sort Strip**: Single horizontal row combining an edge-to-edge search bar with a compact sort assist chip (`Sort: A–Z`). Supports **Dual Search Matching** across both user-facing `appName` and technical `packageName` (e.g. searching `"vending"` surfaces Google Play Store).
+- **Filter Chips Bar (`filter_chips_row`)**: Horizontally scrolling `LazyRow` featuring pinned `Locked Only ($count)` and `Customized ($count)` FilterChips, 5 built-in categories (`Banking & Finance`, `Social & Messaging`, `Sensitive & Recommended`, `System Settings`, `Other Apps`), dynamic user tag chips (`#$tag ($count)`), and `+ Tag` AssistChip.
+- **Contextual Tag Action Strip**: Rendered when filtering by a custom tag, showing live counter (`X of Y protected in #$tag`), 1-tap `[Lock All]`, 1-tap `[Unlock All]`, and a delete tag icon button with confirmation dialog.
 
 ### Modals & Bottom Sheets
-- **`AppSecurityProfileSheetContent`**: Modal bottom sheet with horizontal segmented `FilterChip` selector (`Default`, `Instant (0s)`, `30s`, `1m`, `5m`, `15m`) with dynamic contextual caption, reclaiming over 180dp of vertical height vs. vertical radio lists.
+- **`AppSecurityProfileSheetContent`**: Modal bottom sheet featuring:
+  - Header with app icon, title, package name, and live Lock/Unlock toggle.
+  - Re-lock Timeout segmented `FilterChip` selector (`Default`, `Instant (0s)`, `30s`, `1m`, `5m`, `15m`).
+  - **Category & Tags Section**: Interactive category dropdown capsule allowing reclassification to any of the 5 categories (with a "Reset to Default" action), plus interactive custom tag chips with `(x)` remove buttons and a `+ Add Tag` AssistChip opening `AddTagToAppDialog`.
+  - Advanced Protection toggles: "Require Master PIN Only (Bypass Biometrics)" and "Hide Notification Previews".
 - Modal bottom sheets always use `rememberModalBottomSheetState(skipPartiallyExpanded = true)`.
 
 ### Tables
