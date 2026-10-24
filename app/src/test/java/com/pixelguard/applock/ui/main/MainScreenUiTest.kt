@@ -88,7 +88,7 @@ class MainScreenUiTest {
         }
 
         composeTestRule.onNodeWithText("Pixel Guard").assertExists()
-        composeTestRule.onNodeWithText("Pixel 9 Armor", substring = true).assertExists()
+        composeTestRule.onNodeWithText("No apps locked", substring = true).assertExists()
         composeTestRule.onNodeWithContentDescription("Settings").assertExists()
         composeTestRule.onNodeWithContentDescription("Intruder Selfies").assertExists()
         composeTestRule.onNodeWithText("Score").assertExists()
@@ -336,8 +336,8 @@ class MainScreenUiTest {
         composeTestRule.onNodeWithText("Google Pay").performClick()
 
         composeTestRule.onNodeWithText("Security Rules").assertExists()
-        composeTestRule.onNodeWithText("Require Master PIN Only").assertExists()
-        composeTestRule.onNodeWithText("Re-lock Timeout").assertExists()
+        composeTestRule.onNodeWithText("Always Ask for Passcode").assertExists()
+        composeTestRule.onNodeWithText("When to Lock This App").assertExists()
     }
 
     @Test

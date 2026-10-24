@@ -76,8 +76,14 @@ adb shell am start -n com.pixelguard.applock/.ui.main.MainActivity
 
 ## Testing Commands
 ```powershell
-# Run unit tests
+# Run all unit and Robolectric UI tests (parallelized across CPU cores)
 .\gradlew.bat testDebugUnitTest
+
+# Run fast unit tests only (<15s, excludes slow Robolectric Compose UI tests)
+.\gradlew.bat testFast
+
+# Run a specific test class instantly
+.\gradlew.bat testDebugUnitTest --tests "SessionManagerTest"
 
 # Run connected Android instrumentation tests (requires device/emulator)
 .\gradlew.bat connectedDebugAndroidTest

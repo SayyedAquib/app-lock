@@ -2,8 +2,8 @@
     <string name="app_name">Pixel Guard</string>
     <string name="accessibility_service_label">Pixel Guard Protection</string>
     <string name="accessibility_service_description">Pixel Guard uses this permission solely to detect when a protected app opens, so it can instantly show your lock screen. It does NOT read, collect, or transmit any screen content or personal data. All processing happens locally on your device.</string>
-    <string name="notification_service_label">Pixel Guard Notification Shield</string>
-    <string name="notification_service_description">Protects incoming message previews and sensitive notifications from locked apps.</string>
+    <string name="notification_service_label">Pixel Guard Notification Privacy</string>
+    <string name="notification_service_description">Hides private message previews from locked apps in your notification bar.</string>
     <string name="foreground_service_channel_name">Pixel Guard Security</string>
     <string name="foreground_service_notification_title">Pixel Guard Active</string>
     <string name="foreground_service_notification_text">Protecting your private apps and notifications</string>

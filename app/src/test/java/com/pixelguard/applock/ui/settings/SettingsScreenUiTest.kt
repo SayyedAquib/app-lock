@@ -64,10 +64,10 @@ class SettingsScreenUiTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Protection Settings").assertExists()
-        composeTestRule.onNodeWithText("Titan M2").assertExists()
-        composeTestRule.onNodeWithText("Pixel 9 Biometrics").assertExists()
-        composeTestRule.onNodeWithText("Change Master PIN").assertExists()
+        composeTestRule.onNodeWithText("Settings").assertExists()
+        composeTestRule.onNodeWithText("Active").assertExists()
+        composeTestRule.onNodeWithText("Fingerprint & Face Unlock").assertExists()
+        composeTestRule.onNodeWithText("Change Passcode").assertExists()
     }
 
     @Test
@@ -81,7 +81,7 @@ class SettingsScreenUiTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Hardware Armor Active").assertExists()
+        composeTestRule.onNodeWithText("Your Apps are Protected").assertExists()
     }
 
     @Test
@@ -104,8 +104,8 @@ class SettingsScreenUiTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Attention Needed").assertExists()
-        composeTestRule.onNodeWithText("Enable Settings Protection & Recents Masking to prevent bypass").assertExists()
+        composeTestRule.onNodeWithText("Extra Protection Recommended").assertExists()
+        composeTestRule.onNodeWithText("Turn on Phone Settings Protection and App Switcher Blurring to stay fully secure").assertExists()
     }
 
     @Test
@@ -136,8 +136,8 @@ class SettingsScreenUiTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Change Master PIN").performScrollTo().performClick()
-        composeTestRule.onNodeWithText("Current 4-Digit PIN").assertExists()
+        composeTestRule.onNodeWithText("Change Passcode").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Current 4-Digit Passcode").assertExists()
     }
 
     @Test
@@ -154,18 +154,18 @@ class SettingsScreenUiTest {
         }
 
         // Verify sheet fields exist and test mismatch validation
-        composeTestRule.onNodeWithText("New 4-Digit PIN").performTextInput("1234")
-        composeTestRule.onNodeWithText("Confirm PIN").performTextInput("9999")
-        composeTestRule.onNodeWithText("Save PIN").performClick()
+        composeTestRule.onNodeWithText("New 4-Digit Passcode").performTextInput("1234")
+        composeTestRule.onNodeWithText("Confirm Passcode").performTextInput("9999")
+        composeTestRule.onNodeWithText("Save Passcode").performClick()
 
         // Mismatch validation error
-        composeTestRule.onNodeWithText("PINs do not match").assertExists()
+        composeTestRule.onNodeWithText("Passcodes do not match").assertExists()
         assertThat(savedPin).isNull()
 
         // Clear and enter matching PIN
-        composeTestRule.onNodeWithText("Confirm PIN").performTextClearance()
-        composeTestRule.onNodeWithText("Confirm PIN").performTextInput("1234")
-        composeTestRule.onNodeWithText("Save PIN").performClick()
+        composeTestRule.onNodeWithText("Confirm Passcode").performTextClearance()
+        composeTestRule.onNodeWithText("Confirm Passcode").performTextInput("1234")
+        composeTestRule.onNodeWithText("Save Passcode").performClick()
 
         assertThat(savedPin).isEqualTo("1234")
     }
@@ -183,7 +183,7 @@ class SettingsScreenUiTest {
             }
         }
 
-        composeTestRule.onNodeWithText("1 minute").performClick()
+        composeTestRule.onNodeWithText("After 1 minute").performClick()
 
         assertThat(selectedSeconds).isEqualTo(60)
     }
@@ -242,16 +242,16 @@ class SettingsScreenUiTest {
         }
 
         // Header and badge exist
-        composeTestRule.onNodeWithText("Security & Privacy Info").assertExists()
+        composeTestRule.onNodeWithText("Help & Privacy").assertExists()
         composeTestRule.onNodeWithText("FAQ").assertExists()
 
         // Questions exist
-        val question1 = "Why does Android show a \"Review app with full device access\" notification?"
-        val question2 = "Does Pixel Guard read my screen content or personal data?"
+        val question1 = "Why does Android show a \"Review app with full device access\" alert?"
+        val question2 = "Does Pixel Guard read my screen or private messages?"
         composeTestRule.onNodeWithText(question1).assertExists()
         composeTestRule.onNodeWithText(question2).assertExists()
 
-        val answer1 = "This is a standard Android security reminder that appears periodically for ALL apps that use Accessibility Service — including password managers, screen readers, and automation tools. It does NOT mean Pixel Guard is unsafe. Android simply reminds you to review which apps have this permission. You can safely dismiss it."
+        val answer1 = "Android regularly shows this reminder for any app that detects app launches, including password managers and app lockers. Pixel Guard is completely safe, and you can safely swipe this reminder away."
 
         // Answer should not exist initially
         composeTestRule.onNodeWithText(answer1).assertDoesNotExist()

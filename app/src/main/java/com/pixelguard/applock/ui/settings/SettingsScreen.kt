@@ -108,7 +108,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "Protection Settings", fontWeight = FontWeight.Bold) },
+                title = { Text(text = "Settings", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -196,7 +196,7 @@ fun SettingsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = if (hasSecurityVulnerability) "Attention Needed" else "Hardware Armor Active",
+                                text = if (hasSecurityVulnerability) "Extra Protection Recommended" else "Your Apps are Protected",
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -209,7 +209,7 @@ fun SettingsScreen(
                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = "Titan M2",
+                                    text = "Active",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
@@ -218,9 +218,9 @@ fun SettingsScreen(
                         }
                         Text(
                             text = if (hasSecurityVulnerability)
-                                "Enable Settings Protection & Recents Masking to prevent bypass"
+                                "Turn on Phone Settings Protection and App Switcher Blurring to stay fully secure"
                             else
-                                "$activeShields of 7 Protections Armed • Pixel 9 Biometrics Enforced",
+                                "$activeShields of 7 security features turned on • Fingerprint & Face Unlock active",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -247,7 +247,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Arm Recommended Shields",
+                                    text = "Turn On Recommended Protections",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.sp
                                 )
@@ -257,17 +257,17 @@ fun SettingsScreen(
                 }
             }
 
-            // 2. Card 1: Authentication & Biometrics
+            // 2. Card 1: Sign-In & Passcode
             SettingsCard {
                 SettingsCategoryHeader(
-                    title = "Authentication & Biometrics",
+                    title = "Sign-In & Passcode",
                     icon = Icons.Default.Fingerprint,
-                    badgeText = "Hardware-Backed"
+                    badgeText = "Secured"
                 )
 
                 SettingsSwitchRow(
-                    title = "Pixel 9 Biometrics",
-                    subtitle = "Use ultrasonic fingerprint & Face Unlock to unlock apps instantly",
+                    title = "Fingerprint & Face Unlock",
+                    subtitle = "Unlock apps instantly using your fingerprint or face",
                     icon = Icons.Default.Fingerprint,
                     checked = prefs.isBiometricsEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isBiometricsEnabled = it)) }
@@ -279,8 +279,8 @@ fun SettingsScreen(
                 )
 
                 SettingsActionRow(
-                    title = "Change Master PIN",
-                    subtitle = "Update the 4-digit master PIN backup (PBKDF2 200K iterations)",
+                    title = "Change Passcode",
+                    subtitle = "Update your 4-digit backup passcode",
                     icon = Icons.Default.Key,
                     onClick = { showChangePinSheet = true }
                 )
@@ -291,25 +291,25 @@ fun SettingsScreen(
                 )
 
                 SettingsSwitchRow(
-                    title = "Scramble PIN Keypad",
-                    subtitle = "Randomize numeric button positions on every unlock to defeat shoulder surfers",
+                    title = "Scramble Keypad",
+                    subtitle = "Randomize number positions on every unlock to prevent people from guessing your passcode",
                     icon = Icons.Default.Shield,
                     checked = prefs.isScramblePinEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isScramblePinEnabled = it)) }
                 )
             }
 
-            // 3. Card 2: Privacy & Anti-Tamper
+            // 3. Card 2: Privacy & Safety
             SettingsCard {
                 SettingsCategoryHeader(
-                    title = "Privacy & Anti-Tamper",
+                    title = "Privacy & Safety",
                     icon = Icons.Default.Shield,
-                    badgeText = "Defense-in-Depth"
+                    badgeText = "Extra Security"
                 )
 
                 SettingsSwitchRow(
-                    title = "Recents Privacy Masking",
-                    subtitle = "Hide app preview cards & block screenshots in Android overview",
+                    title = "Hide in App Switcher",
+                    subtitle = "Blurs app screens and blocks screenshots when switching between apps",
                     icon = Icons.Default.VisibilityOff,
                     checked = prefs.isRecentsMaskingEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isRecentsMaskingEnabled = it)) }
@@ -321,8 +321,8 @@ fun SettingsScreen(
                 )
 
                 SettingsSwitchRow(
-                    title = "Notification Privacy Shield",
-                    subtitle = "Hide sensitive message previews from locked apps in status bar notifications",
+                    title = "Hide Notification Previews",
+                    subtitle = "Hides private message previews from locked apps in your notification bar",
                     icon = Icons.Default.Notifications,
                     checked = prefs.isNotificationShieldEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isNotificationShieldEnabled = it)) }
@@ -335,7 +335,7 @@ fun SettingsScreen(
 
                 SettingsSwitchRow(
                     title = "Intruder Selfie",
-                    subtitle = "Silently snap front camera photo after failed unlock attempts",
+                    subtitle = "Silently takes a photo with the front camera when someone enters the wrong passcode",
                     icon = Icons.Default.CameraAlt,
                     checked = prefs.isIntruderSelfieEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isIntruderSelfieEnabled = it)) }
@@ -347,8 +347,8 @@ fun SettingsScreen(
                 )
 
                 SettingsSwitchRow(
-                    title = "Settings & Package Protection",
-                    subtitle = "Require PIN to access Android Settings, App Info, or package uninstallers (Pixel & AOSP)",
+                    title = "Lock Phone Settings",
+                    subtitle = "Require passcode to open phone Settings, App Info, or uninstall apps",
                     icon = Icons.Default.Security,
                     checked = prefs.isSettingsProtected,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isSettingsProtected = it)) }
@@ -360,8 +360,8 @@ fun SettingsScreen(
                 )
 
                 SettingsSwitchRow(
-                    title = "Prevent Play Store Tampering",
-                    subtitle = "Require authentication before opening Google Play Store to stop unauthorized uninstallation",
+                    title = "Lock Google Play Store",
+                    subtitle = "Require passcode before opening Google Play Store to prevent uninstalling apps",
                     icon = Icons.Default.Shield,
                     checked = prefs.isPlayStoreProtected,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isPlayStoreProtected = it)) }
@@ -373,25 +373,25 @@ fun SettingsScreen(
                 )
 
                 SettingsSwitchRow(
-                    title = "Fake Crash Decoy",
-                    subtitle = "Show fake 'App has stopped' dialog before unlocking (long press to reveal PIN)",
+                    title = "Fake Crash Screen",
+                    subtitle = "Shows a fake 'App has stopped' alert; hold down the alert to enter your passcode",
                     icon = Icons.Default.VisibilityOff,
                     checked = prefs.isDecoyCrashEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isDecoyCrashEnabled = it)) }
                 )
             }
 
-            // 4. Card 3: Tactile & Display Polish
+            // 4. Card 3: Look & Feel
             SettingsCard {
                 SettingsCategoryHeader(
-                    title = "Tactile & Display",
+                    title = "Look & Feel",
                     icon = Icons.Default.Palette,
-                    badgeText = "Pixel 9"
+                    badgeText = "Personalize"
                 )
 
                 SettingsSwitchRow(
-                    title = "App-Themed Material You",
-                    subtitle = "Ambient radial brand glow & accents dynamically tailored to the locked app",
+                    title = "Match App Colors",
+                    subtitle = "Tints the lock screen with each app's primary color (e.g. green for WhatsApp)",
                     icon = Icons.Default.Palette,
                     checked = prefs.isDynamicAppThemingEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isDynamicAppThemingEnabled = it)) }
@@ -403,8 +403,8 @@ fun SettingsScreen(
                 )
 
                 SettingsSwitchRow(
-                    title = "Pixel Haptic Feedback",
-                    subtitle = "Tactile linear actuator micro-ticks on keypad & auth feedback (respects system haptics)",
+                    title = "Vibration Feedback",
+                    subtitle = "Feel subtle vibration clicks when typing your passcode",
                     icon = Icons.Default.Vibration,
                     checked = prefs.isHapticsEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isHapticsEnabled = it)) }
@@ -416,34 +416,34 @@ fun SettingsScreen(
                 )
 
                 SettingsSwitchRow(
-                    title = "Fluid Micro-Animations",
-                    subtitle = "Spring-loaded physics, lock rotation & pulse (honors Android 'Remove animations')",
+                    title = "Smooth Animations",
+                    subtitle = "Show fluid motion effects when unlocking",
                     icon = Icons.Default.MotionPhotosOn,
                     checked = prefs.isAnimationsEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isAnimationsEnabled = it)) }
                 )
             }
 
-            // 5. Card 4: Automation & Schedules
+            // 5. Card 4: Schedules & Timers
             SettingsCard {
                 SettingsCategoryHeader(
-                    title = "Automation & Schedules",
+                    title = "Schedules & Timers",
                     icon = Icons.Default.Timer,
-                    badgeText = "Smart Rules"
+                    badgeText = "Automations"
                 )
 
                 val graceLabel = when (prefs.gracePeriodSeconds) {
-                    com.pixelguard.applock.domain.usecase.SessionManager.GRACE_UNTIL_SCREEN_OFF -> "Until screen turns off"
-                    0 -> "Immediately (with 15s quick switch)"
-                    30 -> "30 seconds grace period"
-                    60 -> "1 minute grace period"
-                    300 -> "5 minutes grace period"
-                    900 -> "15 minutes grace period"
-                    else -> "${prefs.gracePeriodSeconds} seconds"
+                    com.pixelguard.applock.domain.usecase.SessionManager.GRACE_UNTIL_SCREEN_OFF -> "When screen turns off"
+                    0 -> "Immediately (15s buffer when switching apps)"
+                    30 -> "After 30 seconds"
+                    60 -> "After 1 minute"
+                    300 -> "After 5 minutes"
+                    900 -> "After 15 minutes"
+                    else -> "After ${prefs.gracePeriodSeconds} seconds"
                 }
 
                 SettingsActionRow(
-                    title = "Default Lock Frequency",
+                    title = "When to Lock Apps",
                     subtitle = graceLabel,
                     icon = Icons.Default.Timer,
                     onClick = { showGracePeriodSheet = true }
@@ -455,8 +455,8 @@ fun SettingsScreen(
                 )
 
                 SettingsSwitchRow(
-                    title = "Night Lockdown Schedule",
-                    subtitle = "Enforce strict 0-second re-lock schedule automatically during nighttime hours",
+                    title = "Night Schedule",
+                    subtitle = "Lock apps immediately with no delay while you sleep",
                     icon = Icons.Default.Bedtime,
                     checked = prefs.isScheduleEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isScheduleEnabled = it)) }
@@ -472,7 +472,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Active hours: ${formatHour(prefs.scheduleStartHour)} – ${formatHour(prefs.scheduleEndHour)} (Tap to configure)",
+                            text = "Active hours: ${formatHour(prefs.scheduleStartHour)} – ${formatHour(prefs.scheduleEndHour)} (Tap to change)",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
@@ -488,12 +488,12 @@ fun SettingsScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Require Master PIN Only at Night",
+                                text = "Require Passcode Only at Night",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Disables Fingerprint & Face Unlock while scheduled to protect while asleep",
+                                text = "Disables fingerprint and face unlock while scheduled so no one can unlock your phone while you are asleep",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -511,8 +511,8 @@ fun SettingsScreen(
                 )
 
                 SettingsSwitchRow(
-                    title = "Quick Settings Tile",
-                    subtitle = "Status bar tile to pause protection (requires authentication before pausing)",
+                    title = "Pause Protection Button",
+                    subtitle = "Add a quick button in your swipe-down settings to pause app lock temporarily",
                     icon = Icons.Default.Dashboard,
                     checked = prefs.isQuickTileEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isQuickTileEnabled = it)) }
@@ -520,7 +520,7 @@ fun SettingsScreen(
 
                 if (prefs.isQuickTileEnabled) {
                     val durationLabel = when (prefs.quickTilePauseMinutes) {
-                        -1 -> "Until manually resumed"
+                        -1 -> "Until I turn it back on"
                         5 -> "5 minutes"
                         15 -> "15 minutes (Default)"
                         30 -> "30 minutes"
@@ -536,7 +536,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Pause Duration: $durationLabel (Tap to configure)",
+                            text = "Pause Duration: $durationLabel (Tap to change)",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
@@ -550,8 +550,8 @@ fun SettingsScreen(
                 )
 
                 SettingsSwitchRow(
-                    title = "Per-App Custom Grace Periods",
-                    subtitle = "Show individual timeout badges ('0s', '1m', '5m') for each app on the main screen",
+                    title = "Custom App Lock Timers",
+                    subtitle = "Show individual lock timer badges for each app on the main screen",
                     icon = Icons.Default.HourglassTop,
                     checked = prefs.isPerAppGraceEnabled,
                     onCheckedChange = { viewModel.updatePreferences(prefs.copy(isPerAppGraceEnabled = it)) }
@@ -569,7 +569,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Reset all custom app timeouts to default",
+                            text = "Reset all custom app timers to default",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                             fontWeight = FontWeight.SemiBold
@@ -578,7 +578,7 @@ fun SettingsScreen(
                 }
             }
 
-            // 6. Card 5: Security & Privacy Info (Collapsible FAQ)
+            // 6. Card 5: Help & Privacy (Collapsible FAQ)
             SecurityPrivacyFaqCard()
         }
     }
@@ -707,9 +707,9 @@ fun ChangePinSheetContent(
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column {
-                Text(text = "Change Master PIN", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(text = "Change Passcode", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    text = if (!isCurrentPinVerified) "Enter current PIN to confirm identity" else "Enter a new 4-digit master security PIN",
+                    text = if (!isCurrentPinVerified) "Enter current passcode to continue" else "Enter a new 4-digit passcode",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -720,7 +720,7 @@ fun ChangePinSheetContent(
             OutlinedTextField(
                 value = currentPin,
                 onValueChange = { if (it.length <= 4 && it.all { ch -> ch.isDigit() }) currentPin = it },
-                label = { Text("Current 4-Digit PIN") },
+                label = { Text("Current 4-Digit Passcode") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
@@ -730,7 +730,7 @@ fun ChangePinSheetContent(
             OutlinedTextField(
                 value = newPin,
                 onValueChange = { if (it.length <= 4 && it.all { ch -> ch.isDigit() }) newPin = it },
-                label = { Text("New 4-Digit PIN") },
+                label = { Text("New 4-Digit Passcode") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
@@ -740,7 +740,7 @@ fun ChangePinSheetContent(
             OutlinedTextField(
                 value = confirmPin,
                 onValueChange = { if (it.length <= 4 && it.all { ch -> ch.isDigit() }) confirmPin = it },
-                label = { Text("Confirm PIN") },
+                label = { Text("Confirm Passcode") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
@@ -764,7 +764,7 @@ fun ChangePinSheetContent(
                 Button(
                     onClick = {
                         if (currentPin.length != 4) {
-                            error = "Current PIN must be 4 digits"
+                            error = "Current passcode must be 4 digits"
                             return@Button
                         }
                         scope.launch {
@@ -777,7 +777,7 @@ fun ChangePinSheetContent(
                                 error = if (remainingLockout > 0) {
                                     "Too many failed attempts. Locked out for ${remainingLockout}s"
                                 } else {
-                                    "Current PIN is incorrect"
+                                    "Current passcode is incorrect"
                                 }
                             }
                         }
@@ -790,15 +790,15 @@ fun ChangePinSheetContent(
                 Button(
                     onClick = {
                         if (newPin.length != 4) {
-                            error = "PIN must be exactly 4 digits"
+                            error = "Passcode must be exactly 4 digits"
                         } else if (newPin != confirmPin) {
-                            error = "PINs do not match"
+                            error = "Passcodes do not match"
                         } else {
                             onSavePin(newPin)
                         }
                     }
                 ) {
-                    Text("Save PIN")
+                    Text("Save Passcode")
                 }
             }
         }
@@ -811,12 +811,12 @@ fun GlobalGracePeriodSheetContent(
     onSelectGracePeriod: (Int) -> Unit
 ) {
     val options = listOf(
-        0 to Pair("Immediately", "Locks on exit with 15s quick-switch buffer; screen-off locks instantly"),
-        com.pixelguard.applock.domain.usecase.SessionManager.GRACE_UNTIL_SCREEN_OFF to Pair("Until screen turns off", "Stays unlocked while phone is in use; screen-off locks instantly"),
-        30 to Pair("30 seconds", "Short multitasking window before re-locking"),
-        60 to Pair("1 minute", "Standard grace period for rapid app switching"),
-        300 to Pair("5 minutes", "Extended window for prolonged active sessions"),
-        900 to Pair("15 minutes", "Maximum continuous access period")
+        0 to Pair("Immediately", "Locks after you leave, with a 15-second buffer to copy codes or switch apps"),
+        com.pixelguard.applock.domain.usecase.SessionManager.GRACE_UNTIL_SCREEN_OFF to Pair("When screen turns off", "Stays unlocked while using your phone; locks the moment the screen turns off"),
+        30 to Pair("After 30 seconds", "Locks 30 seconds after leaving the app"),
+        60 to Pair("After 1 minute", "Locks 1 minute after leaving the app"),
+        300 to Pair("After 5 minutes", "Locks 5 minutes after leaving the app"),
+        900 to Pair("After 15 minutes", "Locks 15 minutes after leaving the app")
     )
 
     Column(
@@ -843,8 +843,8 @@ fun GlobalGracePeriodSheetContent(
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column {
-                Text(text = "Global Relock Frequency", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(text = "Applies to all locked apps unless customized", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = "When to Lock Apps", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(text = "Choose how quickly apps lock after you leave them", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -924,8 +924,8 @@ fun ScheduleSheetContent(
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column {
-                Text(text = "Night Lockdown Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(text = "Forces instant 0-second relocking during sleep hours", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = "Night Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(text = "Locks apps immediately with no delay while you sleep", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -990,7 +990,7 @@ fun ScheduleSheetContent(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "$durationHours Hours Lockdown",
+                        text = "$durationHours Hours Active",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -1004,7 +1004,7 @@ fun ScheduleSheetContent(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Instant 0s relock enforced every night",
+                        text = "Locks apps immediately every night",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1012,7 +1012,7 @@ fun ScheduleSheetContent(
             }
         }
 
-        Text(text = "Lockdown Starts At:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+        Text(text = "Starts At:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1026,7 +1026,7 @@ fun ScheduleSheetContent(
             }
         }
 
-        Text(text = "Lockdown Ends At:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+        Text(text = "Ends At:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1063,11 +1063,11 @@ fun QuickTilePauseSheetContent(
     onSelectDuration: (Int) -> Unit
 ) {
     val pauseOptions = listOf(
-        5 to Pair("5 minutes", "Quick temporary pause"),
-        15 to Pair("15 minutes (Default)", "Standard balanced break"),
-        30 to Pair("30 minutes", "Extended working session"),
-        60 to Pair("1 hour", "Prolonged pause"),
-        -1 to Pair("Until manually resumed", "Protection remains paused until you tap the tile again")
+        5 to Pair("5 minutes", "Quick temporary break"),
+        15 to Pair("15 minutes (Default)", "Standard break"),
+        30 to Pair("30 minutes", "Long break"),
+        60 to Pair("1 hour", "Extended break"),
+        -1 to Pair("Until I turn it back on", "Protection stays paused until you tap the button again")
     )
 
     Column(
@@ -1095,12 +1095,12 @@ fun QuickTilePauseSheetContent(
             Spacer(modifier = Modifier.width(14.dp))
             Column {
                 Text(
-                    text = "Quick Tile Pause Duration",
+                    text = "Pause Protection Timer",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Choose how long protection pauses when tapped in shade",
+                    text = "Choose how long apps stay unlocked when paused",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1174,33 +1174,33 @@ fun SecurityPrivacyFaqCard() {
     val faqItems = remember {
         listOf(
             FaqItem(
-                question = "Why does Android show a \"Review app with full device access\" notification?",
-                answer = "This is a standard Android security reminder that appears periodically for ALL apps that use Accessibility Service — including password managers, screen readers, and automation tools. It does NOT mean Pixel Guard is unsafe. Android simply reminds you to review which apps have this permission. You can safely dismiss it."
+                question = "Why does Android show a \"Review app with full device access\" alert?",
+                answer = "Android regularly shows this reminder for any app that detects app launches, including password managers and app lockers. Pixel Guard is completely safe, and you can safely swipe this reminder away."
             ),
             FaqItem(
-                question = "Does Pixel Guard read my screen content or personal data?",
-                answer = "No. Pixel Guard explicitly sets canRetrieveWindowContent to false in its Accessibility configuration. It only detects which app is in the foreground — it cannot read text, passwords, messages, or any on-screen content whatsoever."
+                question = "Does Pixel Guard read my screen or private messages?",
+                answer = "No, never. Pixel Guard only detects when a protected app opens so it can show your lock screen. It cannot see what is on your screen, read your messages, or see passwords you type."
             ),
             FaqItem(
-                question = "Why does Pixel Guard need Accessibility Service?",
-                answer = "Accessibility Service is the only Android API that provides instant, zero-latency detection of app launches. Without it, Pixel Guard would have to use slow polling methods that drain battery and introduce delays — leaving a window where locked apps could be briefly visible before the lock screen appears."
+                question = "Why does Pixel Guard need the App Detection permission?",
+                answer = "This allows Pixel Guard to lock your apps the very instant they open, without battery drain or delays."
             ),
             FaqItem(
-                question = "Is my data sent anywhere?",
-                answer = "Absolutely not. Pixel Guard has zero network permissions, zero analytics SDKs, and zero cloud endpoints. All data — your PIN hash, locked app list, intruder photos, and settings — stays exclusively on your device, protected by Titan M2 hardware encryption."
+                question = "Does any of my data leave my phone?",
+                answer = "No. Pixel Guard has no internet connection, no ads, and no tracking. Your passcode, locked apps, intruder photos, and settings never leave your phone."
             )
         )
     }
 
     SettingsCard {
         SettingsCategoryHeader(
-            title = "Security & Privacy Info",
+            title = "Help & Privacy",
             icon = Icons.Default.Info,
             badgeText = "FAQ"
         )
 
         Text(
-            text = "Common questions about permissions and privacy",
+            text = "Common questions about permissions and how your privacy is protected",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)

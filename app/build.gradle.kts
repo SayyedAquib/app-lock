@@ -56,6 +56,20 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
         unitTests.isIncludeAndroidResources = true
+        unitTests.all { test ->
+            test.maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+            test.minHeapSize = "256m"
+            test.maxHeapSize = "1024m"
+            test.jvmArgs("-XX:+UseParallelGC")
+
+            val requestedTasks = project.gradle.startParameter.taskNames
+            val isFastMode = project.hasProperty("fast") ||
+                requestedTasks.any { it.contains("testFast", ignoreCase = true) }
+
+            if (isFastMode) {
+                test.exclude("**/*UiTest.class", "**/*ContrastTest.class")
+            }
+        }
     }
 }
 
@@ -103,4 +117,10 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+tasks.register("testFast") {
+    group = "verification"
+    description = "Runs fast pure unit and domain logic tests, skipping slow Robolectric Compose UI tests."
+    dependsOn("testDebugUnitTest")
 }

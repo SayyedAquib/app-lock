@@ -130,7 +130,7 @@ fun IntruderLogsScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "When someone enters an incorrect PIN, their photo will appear here.",
+                        text = "When someone enters an incorrect passcode, their photo will appear here.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

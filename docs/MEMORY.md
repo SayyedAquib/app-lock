@@ -320,6 +320,7 @@
 - Decided on Security & Privacy FAQ Card & Accessibility Service Description Improvement (ADR 036).
 - Decided on Custom App Categorization, User Tags, Intermediate AppFilterCriteria, and Permanent Ban on Calculator Launcher Disguises (ADR 037).
 - Decided on Absolute Screen-Off Relock, "Until Screen Off" Frequency & 15-Second Task-Switching Buffer (ADR 039).
+- Decided on Human-Centric, Non-Technical Language & Terminology Transformation (ADR 040).
 
 ## Session 52 (2026-10-24)
 - **Problem**: Repetitive unlock prompts when switching between apps (e.g. copying OTPs, passwords, or links) while maintaining strict device security.
@@ -329,6 +330,29 @@
   3. 15-Second Quick-Switch Buffer: "Immediately" (0s) allows a 15-second multitasking window to copy OTPs/links without re-locking.
   4. Per-App Isolation preserved: Unlocking one app never unlocks another.
   5. Updated `AppSecurityProfileSheetContent`, `GlobalGracePeriodSheetContent`, and unit tests. 100% test pass rate (143 unit tests).
+
+## Session 53 (2026-10-24)
+- **Problem**: UI text contained security engineering and developer jargon ("PBKDF2 200K iterations", "AOSP", "linear actuator micro-ticks", "Titan M2", "Defense-in-Depth", "canRetrieveWindowContent", and "Master PIN").
+- **Solution**:
+  1. Aligned via `/grill-me` on Simple & Friendly Consumer English.
+  2. Adopted "Passcode" everywhere across the app.
+  3. Action-based titles: "Hide in App Switcher", "Hide Notification Previews", "Lock Phone Settings", "Lock Google Play Store", "Fake Crash Screen".
+  4. Natural timing: "When to Lock Apps" ("Immediately (15s buffer for switching apps)", "When screen turns off", "After 1 minute", etc.).
+  5. Reassuring Onboarding: "Welcome to Pixel Guard", "App Detection", "Save Passcode & Finish".
+  6. Plain-language FAQ answers without internal API jargon.
+  7. Updated all 5 UI test suites (`MainScreenUiTest`, `SettingsScreenUiTest`, `OnboardingScreenUiTest`, `IntruderLogsScreenUiTest`, `DualThemeContrastTest`). 100% test pass rate (143 tests).
+
+## Session 54 (2026-10-24)
+- **Problem**: Running `.\gradlew.bat testDebugUnitTest` took excessive time (1–3 minutes).
+- **Diagnosis**:
+  1. Excessive heap `-Xmx4096m` on 8GB host machine with ~2.3GB free RAM caused severe OS memory paging and forced daemon terminations.
+  2. 103 Robolectric Compose UI tests ran sequentially on a single thread (`maxParallelForks = 1`), leaving 4 physical cores / 8 threads idle.
+  3. All-or-nothing execution forced waiting for slow UI tests even when checking sub-second domain/ViewModel logic.
+- **Solution**:
+  1. Re-tuned `gradle.properties`: `-Xmx2048m -XX:+UseParallelGC`, enabled `org.gradle.daemon=true` and `org.gradle.vfs.watch=true`.
+  2. Configured test multi-core parallelization in `app/build.gradle.kts` (`maxParallelForks = (availableProcessors / 2)`).
+  3. Added `.\gradlew.bat testFast` task to run only fast unit tests (slashing test execution time from 44.4s down to 14.9s, a 66% improvement).
+  4. Updated documentation in `AGENTS.md`, `docs/TESTING.md`, `docs/DECISIONS.md` (ADR 041), and `docs/MEMORY.md`.
 
 ## Next Steps
 - Per strict user mandate, calculator launcher disguises and fake calculation passcodes are permanently banned across all future development.

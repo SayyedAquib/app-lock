@@ -100,7 +100,7 @@ Standard 4dp/8dp grid system:
 ### Forms
 - **Search Bar (`OutlinedTextField`)**: `singleLine = true`, `RoundedCornerShape(24.dp)`, leading search icon and trailing clear `IconButton`.
 - **Numeric Keypad**: 4 rows (`1-3`, `4-6`, `7-9`, `bio/0/del`) with instant 4-digit verification.
-- **Master PIN Setup Inputs**: Dual `OutlinedTextField` inputs (`Enter 4-Digit PIN` & `Confirm 4-Digit PIN`) with `PasswordVisualTransformation()`, chained `ImeAction.Next` ➔ `ImeAction.Done` keyboard navigation, wrapped in a scrollable `Modifier.imePadding()` container with automatic animated scroll-into-view behavior to prevent soft keyboard occlusion.
+- **Passcode Setup Inputs**: Dual `OutlinedTextField` inputs (`Enter 4-Digit Passcode` & `Confirm 4-Digit Passcode`) with `PasswordVisualTransformation()`, chained `ImeAction.Next` ➔ `ImeAction.Done` keyboard navigation, wrapped in a scrollable `Modifier.imePadding()` container with automatic animated scroll-into-view behavior to prevent soft keyboard occlusion.
 
 ### Cards
 - **`AppListItem`**: Card with `containerColor = surfaceVariant.copy(alpha = 0.35f)`, subtle `1dp outlineVariant` stroke on locked state, 44dp icon container, title, category, unified drill-down security capsule (`[ 🔑 PIN • $graceBadge › ]`), and trailing upright shackle spring bounce toggle (`-3dp` displacement, `0.92f` scale pulse).
@@ -111,12 +111,12 @@ Standard 4dp/8dp grid system:
   - *Actions*: Bottom-right action row (`Later` text button + `Enable` filled button; or `OutlinedButton` when skipped). Eliminates horizontal crowding and guarantees 100% badge visibility.
 - **`Setup Permissions Primary Action Button`**: 52dp prominent action button dynamically reflecting the zero-trust single-permission architecture (`"Grant Accessibility Permission"` ➔ `"Continue to App Lock"`). Fully actionable across all states, directly navigating the user to the Accessibility settings screen if ungranted, or advancing setup once enabled. Overlay permission (`SYSTEM_ALERT_WINDOW`) has been completely eradicated from the system.
 - **`SettingsCard`**: 18dp container with `surfaceContainer` tint, `1dp outlineVariant` border stroke, 32dp header icon disc, and 36dp tonal row icon discs.
-- **`Actionable Hero Banner` (Settings)**: Interactive security status card that detects unconfigured protections (e.g. Settings Protection, Recents Masking) and auto-scrolls down to the offending controls upon tap.
-- **`Recents Privacy Masking & Screen Mirroring`**: Toggles `FLAG_SECURE` dynamically on `MainActivity`, `LockActivity`, and system overlays. When disabled (default), enables full laptop screen mirroring via `scrcpy` and local screenshots. When enabled, strictly enforces hardware-level SurfaceFlinger blanking for maximum overview privacy.
-- **`SecurityPrivacyFaqCard`**: Collapsible accordion-style FAQ card in Settings with "Security & Privacy Info" header (Info icon, "FAQ" badge). Contains 4 expandable items addressing the Android system "Review app with full device access" notification, screen content privacy (`canRetrieveWindowContent=false`), Accessibility Service necessity, and zero-network architecture. Uses spring-animated `AnimatedVisibility` expand/shrink and `graphicsLayer` chevron rotation. Accordion behavior: one item expanded at a time, all start collapsed.
+- **`Actionable Hero Banner` (Settings)**: Interactive security status card ("Your Apps are Protected") that detects unconfigured protections (e.g. Lock Phone Settings, Hide in App Switcher) and auto-scrolls down to the offending controls upon tap.
+- **`Hide in App Switcher & Screen Mirroring`**: Toggles `FLAG_SECURE` dynamically on `MainActivity`, `LockActivity`, and system overlays. When disabled (default), enables full laptop screen mirroring via `scrcpy` and local screenshots. When enabled, strictly enforces hardware-level SurfaceFlinger blanking so apps remain hidden when switching apps.
+- **`SecurityPrivacyFaqCard`**: Collapsible accordion-style FAQ card in Settings with "Common Questions" header (Help icon, "FAQ" badge). Contains 4 expandable items addressing why Pixel Guard needs app detection, how screen privacy is preserved, why the setup permission is required, and zero internet usage guarantee. Uses spring-animated `AnimatedVisibility` expand/shrink and `graphicsLayer` chevron rotation. Accordion behavior: one item expanded at a time, all start collapsed.
 
 ### Navigation & Chrome
-- TopAppBar includes back arrow button, brand title, live status count (`Pixel 9 Armor • $lockedCount Protected`), and shield action icon.
+- TopAppBar includes back arrow button, brand title, live status count (`$lockedCount apps locked`), and shield action icon.
 - Consolidated **Search & Sort Strip**: Single horizontal row combining an edge-to-edge search bar with a compact sort assist chip (`Sort: A–Z`). Supports **Dual Search Matching** across both user-facing `appName` and technical `packageName` (e.g. searching `"vending"` surfaces Google Play Store).
 - **Filter Chips Bar (`filter_chips_row`)**: Horizontally scrolling `LazyRow` featuring pinned `Locked Only ($count)` and `Customized ($count)` FilterChips, 5 built-in categories (`Banking & Finance`, `Social & Messaging`, `Sensitive & Recommended`, `System Settings`, `Other Apps`), dynamic user tag chips (`#$tag ($count)`), and `+ Tag` AssistChip.
 - **Contextual Tag Action Strip**: Rendered when filtering by a custom tag, showing live counter (`X of Y protected in #$tag`), 1-tap `[Lock All]`, 1-tap `[Unlock All]`, and a delete tag icon button with confirmation dialog.
@@ -124,9 +124,9 @@ Standard 4dp/8dp grid system:
 ### Modals & Bottom Sheets
 - **`AppSecurityProfileSheetContent`**: Modal bottom sheet featuring:
   - Header with app icon, title, package name, and live Lock/Unlock toggle.
-  - Re-lock Timeout segmented `FilterChip` selector (`Default`, `Instant (0s)`, `Until Screen Off`, `30s`, `1m`, `5m`, `15m`).
+  - When to Lock This App segmented `FilterChip` selector (`Default`, `Immediately (15s buffer for switching apps)`, `When screen turns off`, `After 1 minute`, `After 5 minutes`, `After 15 minutes`).
   - **Category & Tags Section**: Interactive category dropdown capsule allowing reclassification to any of the 5 categories (with a "Reset to Default" action), plus interactive custom tag chips with `(x)` remove buttons and a `+ Add Tag` AssistChip opening `AddTagToAppDialog`.
-  - Advanced Protection toggles: "Require Master PIN Only (Bypass Biometrics)" and "Hide Notification Previews".
+  - Advanced Protection toggles: "Always Ask for Passcode" and "Hide Notification Previews".
 - Modal bottom sheets always use `rememberModalBottomSheetState(skipPartiallyExpanded = true)`.
 
 ### Tables
@@ -188,17 +188,17 @@ Standard 4dp/8dp grid system:
   - *Keyhole*: Crisp Google Material Blue (`#1A73E8`) aperture centered in the lock body.
 - **Monochrome Themed Icon (`ic_launcher_monochrome.xml`)**: Single solid `#FFFFFF` vector path utilizing `android:fillType="evenOdd"` to cleanly carve out the padlock silhouette and fill the keyhole, providing flawless dynamic Monet wallpaper theming on Android 13-17 Pixel Launcher.
 
-### Attention Needed Security Card & 1-Tap Arming
+### Extra Protection Recommended Card & 1-Tap Arming
 - **Card Hierarchy**: Rendered prominently in `SettingsScreen` whenever critical anti-tamper defenses are disarmed (e.g. `isSettingsProtected == false` or `isRecentsMaskingEnabled == false`).
 - **Styling**: `PixelAmber` container (`#F9AB00` with 0.12f alpha fill and 0.35f alpha outline border), Titan M2 shield badge, and high-visibility warning iconography.
-- **Fast Remediation**: Contains 1-tap `[Arm Recommended Shields]` elevated button with `ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)`. Tapping instantly arms both Settings Protection and Recents Masking, closing the vulnerability gap without tedious manual toggle hunting.
+- **Fast Remediation**: Contains 1-tap `[Turn On Recommended Protections]` elevated button with `ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)`. Tapping instantly arms both Phone Settings Protection and App Switcher Hiding, closing the privacy gap without tedious manual toggle hunting.
 
-### 3-Step Secure PIN Rotation Sheet
+### 3-Step Secure Passcode Change Sheet
 - **Modal Architecture**: Integrated inside `ChangePinSheetContent` as a dedicated bottom sheet.
 - **Three-Stage Verification Flow**:
-  1. *Step 1: Current Master PIN*: Challenges the user for their existing 4-digit PIN via PBKDF2 hash verification. Prevents unauthorized passcode modification if the phone is momentarily unlocked.
-  2. *Step 2: New 4-Digit Master PIN*: User enters the new PIN code with real-time numeric masking.
-  3. *Step 3: Confirm New PIN*: Confirms matching code with error feedback on mismatch.
+  1. *Step 1: Current Passcode*: Challenges the user for their existing 4-digit passcode via PBKDF2 hash verification. Prevents unauthorized passcode modification if the phone is momentarily unlocked.
+  2. *Step 2: New 4-Digit Passcode*: User enters the new passcode with real-time numeric masking.
+  3. *Step 3: Confirm New Passcode*: Confirms matching code with error feedback on mismatch.
 - **Visual Hygiene & Security**: All inputs use `PasswordVisualTransformation('\u2022')`, `KeyboardType.NumberPassword`, and auto-advance focus.
 
 ## Do Not

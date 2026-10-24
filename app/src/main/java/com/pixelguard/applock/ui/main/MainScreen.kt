@@ -203,7 +203,7 @@ fun MainScreen(
                                 fontSize = 20.sp
                             )
                             Text(
-                                text = if (lockedCount > 0) "Pixel 9 Armor • $lockedCount Protected" else "Pixel 9 Armor",
+                                text = if (lockedCount > 0) "$lockedCount apps locked" else "No apps locked",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -1315,12 +1315,12 @@ fun AppSecurityProfileSheetContent(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Require Master PIN Only",
+                            text = "Always Ask for Passcode",
                             fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "Bypass biometrics. Always forces Master PIN entry on launch.",
+                            text = "Skip fingerprint and face unlock; always ask for your passcode.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1368,15 +1368,15 @@ fun AppSecurityProfileSheetContent(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Mask Notification Previews",
+                            text = "Hide Notification Previews",
                             fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
                             text = if (!isGlobalNotifShieldEnabled)
-                                "Notification Shield is disabled globally in Settings"
+                                "Notification Privacy is turned off in Settings"
                             else
-                                "Masks preview contents in Notification Shield when locked",
+                                "Hides message details in notifications while this app is locked",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1401,14 +1401,14 @@ fun AppSecurityProfileSheetContent(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Re-lock Timeout",
+                    text = "When to Lock This App",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
             Text(
-                text = "Time before Pixel Guard re-locks this app after exiting",
+                text = "Choose how quickly this app locks after you leave it",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1416,13 +1416,13 @@ fun AppSecurityProfileSheetContent(
             Spacer(modifier = Modifier.height(10.dp))
 
             val graceOptions = listOf(
-                -1 to Pair("Default", "Follows global frequency set in Settings"),
-                0 to Pair("Instant (0s)", "Locks on exit with 15s quick-switch buffer; screen-off locks instantly"),
-                com.pixelguard.applock.domain.usecase.SessionManager.GRACE_UNTIL_SCREEN_OFF to Pair("Until Screen Off", "Stays unlocked while phone is in use; screen-off locks instantly"),
-                30 to Pair("30s", "Allows quick task-switching within 30 seconds"),
-                60 to Pair("1m", "Safe window for short multitasks"),
-                300 to Pair("5m", "Balanced for prolonged active sessions"),
-                900 to Pair("15m", "Convenience mode for extended tasks")
+                -1 to Pair("Default", "Uses your global setting from Settings"),
+                0 to Pair("Immediately", "Locks after you leave, with a 15-second buffer to copy codes"),
+                com.pixelguard.applock.domain.usecase.SessionManager.GRACE_UNTIL_SCREEN_OFF to Pair("When Screen Off", "Stays unlocked while using your phone; locks when the screen turns off"),
+                30 to Pair("30s", "Locks 30 seconds after leaving"),
+                60 to Pair("1m", "Locks 1 minute after leaving"),
+                300 to Pair("5m", "Locks 5 minutes after leaving"),
+                900 to Pair("15m", "Locks 15 minutes after leaving")
             )
 
             LazyRow(
@@ -1446,7 +1446,7 @@ fun AppSecurityProfileSheetContent(
             }
 
             val currentDesc = graceOptions.find { it.first == currentSec }?.second?.second
-                ?: "Follows global frequency set in Settings"
+                ?: "Uses your global setting from Settings"
 
             Spacer(modifier = Modifier.height(6.dp))
             Text(

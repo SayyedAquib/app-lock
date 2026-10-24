@@ -139,7 +139,7 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Setup Permissions",
+                text = "Welcome to Pixel Guard",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -148,7 +148,7 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Pixel Guard needs Android system permissions to detect app opens and render the secure lock overlay.",
+                text = "Pixel Guard needs a couple of permissions to detect when your locked apps open and keep your private data safe.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -187,13 +187,13 @@ fun OnboardingScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Android 17 Notice: Restricted Settings",
+                                text = "Important: Restricted Settings",
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleSmall
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "If Accessibility is greyed out with 'Restricted setting', tap the button below to open App Info ➔ tap 3 dots (⋮) top-right ➔ tap 'Allow restricted settings'.",
+                                text = "If the setting is greyed out with 'Restricted setting', tap 'Open App Settings' below, tap the 3 dots (⋮) in the top corner, and choose 'Allow restricted settings'.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 lineHeight = 18.sp
@@ -204,7 +204,7 @@ fun OnboardingScreen(
                                 shape = RoundedCornerShape(8.dp),
                                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                             ) {
-                                Text(text = "Open App Info", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                Text(text = "Open App Settings", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                             }
                         }
                     }
@@ -217,8 +217,8 @@ fun OnboardingScreen(
 
             // 1. Accessibility Service (Required)
             PermissionCard(
-                title = "Accessibility Service",
-                description = "Zero-latency real-time detection when you tap a locked application.",
+                title = "App Detection",
+                description = "Allows Pixel Guard to instantly detect and lock your selected apps the moment they open.",
                 isRequired = true,
                 isGranted = permissionStatus.hasAccessibilityPermission,
                 icon = Icons.Default.Accessibility,
@@ -229,8 +229,8 @@ fun OnboardingScreen(
 
             // 3. Notification Privacy Shield (Optional)
             PermissionCard(
-                title = "Notification Privacy Shield",
-                description = "Hides sensitive message previews from locked apps in the notification shade.",
+                title = "Hide Notification Details",
+                description = "Keeps private message previews hidden from your notification bar while apps are locked.",
                 isRequired = false,
                 isGranted = permissionStatus.hasNotificationPermission,
                 isSkipped = isNotificationSkipped,
@@ -273,12 +273,12 @@ fun OnboardingScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "Step 2: Create Master PIN",
+                                    text = "Step 2: Create Passcode",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Required to unlock apps and manage settings",
+                                    text = "Use this 4-digit passcode to unlock apps and manage settings",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -297,7 +297,7 @@ fun OnboardingScreen(
                                     pinError = null
                                 }
                             },
-                            label = { Text("Enter 4-Digit PIN") },
+                            label = { Text("Enter 4-Digit Passcode") },
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.NumberPassword,
@@ -321,7 +321,7 @@ fun OnboardingScreen(
                                     pinError = null
                                 }
                             },
-                            label = { Text("Confirm 4-Digit PIN") },
+                            label = { Text("Confirm 4-Digit Passcode") },
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.NumberPassword,
@@ -334,7 +334,7 @@ fun OnboardingScreen(
                                         if (newPin == confirmPin) {
                                             viewModel.setMasterPin(newPin) { onComplete() }
                                         } else {
-                                            pinError = "PINs do not match"
+                                            pinError = "Passcodes do not match"
                                         }
                                     }
                                 }
@@ -358,9 +358,9 @@ fun OnboardingScreen(
                         Button(
                             onClick = {
                                 if (newPin.length != 4) {
-                                    pinError = "PIN must be exactly 4 digits"
+                                    pinError = "Passcode must be exactly 4 digits"
                                 } else if (newPin != confirmPin) {
-                                    pinError = "PINs do not match"
+                                    pinError = "Passcodes do not match"
                                 } else {
                                     viewModel.setMasterPin(newPin) {
                                         onComplete()
@@ -374,7 +374,7 @@ fun OnboardingScreen(
                             enabled = newPin.length == 4 && confirmPin.length == 4
                         ) {
                             Text(
-                                text = "Set Master PIN & Finish Setup",
+                                text = "Save Passcode & Finish",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp
                             )
@@ -385,8 +385,8 @@ fun OnboardingScreen(
                 Spacer(modifier = Modifier.height(28.dp))
 
                 val buttonText = when {
-                    permissionStatus.isAllGranted -> "Continue to App Lock"
-                    else -> "Grant Accessibility Permission"
+                    permissionStatus.isAllGranted -> "Get Started"
+                    else -> "Turn On App Detection"
                 }
 
                 Button(
@@ -414,7 +414,7 @@ fun OnboardingScreen(
             if (permissionStatus.isAllGranted && isPinConfigured == true && !permissionStatus.hasNotificationPermission) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "Optional Notification Shield can be turned on anytime in Settings.",
+                    text = "Optional Notification Privacy can be turned on anytime in Settings.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

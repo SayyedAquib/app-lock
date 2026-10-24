@@ -1292,4 +1292,66 @@ Users reported unlock fatigue when rapidly switching between apps (e.g. copying 
 - 100% unit test coverage for screen-off clearing, quick-switch buffers, and "Until Screen Off" sessions.
 - Zero battery or performance overhead.
 
+---
+
+## ADR 040: Human-Centric, Non-Technical Language & Terminology Transformation
+### Date
+2026-10-24
+### Status
+Accepted
+### Context
+Earlier iterations of Pixel Guard contained engineering-focused and cybersecurity jargon throughout the user interface (e.g. "PBKDF2 200K iterations", "AOSP", "Titan M2", "Defense-in-Depth", "linear actuator micro-ticks", "canRetrieveWindowContent", and "Master PIN"). This created comprehension barriers and an intimidating experience for everyday users who simply want to protect their personal privacy.
+### Options Considered
+1. Retain technical descriptions to highlight security algorithms. (Rejected: confuses and alienates everyday users).
+2. Minimalist one-word labels. (Rejected: lacks helpful context for subtle settings).
+3. Simple & Friendly Consumer English (Adopted per user `/grill-me` alignment).
+### Decision
+1. **Passcode Terminology**: Unified all PIN references to "Passcode" (e.g., "Change Passcode", "Enter 4-Digit Passcode", "Always Ask for Passcode", "Require Passcode Only at Night").
+2. **Action-Based Privacy Titles**:
+   - "Hide in App Switcher" (was "Recents Privacy Masking")
+   - "Hide Notification Previews" (was "Notification Privacy Shield")
+   - "Lock Phone Settings" (was "Settings & Package Protection")
+   - "Lock Google Play Store" (was "Prevent Play Store Tampering")
+   - "Fake Crash Screen" (was "Fake Crash Decoy")
+3. **Friendly Lock Timing**:
+   - Renamed "Grace Period / Relock Frequency" to "When to Lock Apps" / "When to Lock This App".
+   - Options rephrased to natural language: "Immediately (15s buffer for switching apps)", "When screen turns off", "After 1 minute", etc.
+4. **Reassuring Onboarding & FAQ**:
+   - Simplified setup titles to "Welcome to Pixel Guard", "App Detection", and "Save Passcode & Finish".
+   - Plain-English FAQ answers eliminating internal API and SDK references.
+5. **Synchronized UI Tests**:
+   - Updated `MainScreenUiTest`, `SettingsScreenUiTest`, `OnboardingScreenUiTest`, `IntruderLogsScreenUiTest`, and `DualThemeContrastTest` to assert against the new user-facing strings.
+### Consequences
+- Dramatically improved usability, clarity, and trust for all users.
+- 100% automated test suite passing (143 unit and UI tests).
+- Zero cryptographic or runtime behavioral changes; PBKDF2 with 200k iterations and AES-GCM encryption continue operating identically under the hood.
+
+---
+
+## ADR 041: Test Suite Multi-Core Parallelization & Fast Unit Execution Profile
+### Date
+2026-10-24
+### Status
+Accepted
+### Context
+Running `.\gradlew.bat testDebugUnitTest` took considerable time (often 1–3 minutes on local machines). Analysis revealed four core bottlenecks:
+1. **Robolectric + Compose Headless UI Simulation**: Emulating Android resources, framework services, and Compose layout/semantics across 103 UI tests consumed ~40s of JVM test time.
+2. **Sequential Test Execution**: AGP ran all tests in a single worker process on one CPU core (`maxParallelForks = 1` by default), leaving 4 physical cores / 8 threads largely idle.
+3. **RAM vs Heap Sizing (Paging)**: Host machine has 8GB RAM with ~2.3GB free. `gradle.properties` specified `-Xmx4096m`, which when paired with a forked test runner JVM forced heavy OS pagefile swapping to disk and caused Windows memory manager to terminate idle daemons.
+4. **All-or-Nothing Execution**: Pure domain, model, and ViewModel unit tests execute in milliseconds, but developers had to wait for the entire Robolectric UI suite on every verification.
+### Decision
+1. **Gradle Memory Tuning**:
+   - Scaled `org.gradle.jvmargs` in `gradle.properties` to `-Xmx2048m -XX:+UseParallelGC` to fit comfortably in available physical RAM and eliminate disk thrashing.
+   - Enabled `org.gradle.daemon=true` and `org.gradle.vfs.watch=true`.
+2. **Multi-Core Test Parallelization**:
+   - Configured `testOptions.unitTests.all` in `app/build.gradle.kts` with `maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)`.
+   - Set test worker heap limits: `minHeapSize = "256m"`, `maxHeapSize = "1024m"`.
+3. **Dedicated `testFast` Task**:
+   - Registered `testFast` in `app/build.gradle.kts` that dynamically excludes slow Robolectric UI tests (`*UiTest*`, `*ContrastTest*`).
+   - Fast unit tests now complete in **~14.9s** (a **66% speedup** from 44.4s).
+### Consequences
+- Dramatically accelerated developer feedback loop during daily coding and logic verification.
+- Preserves full 143-test assurance via `.\gradlew.bat testDebugUnitTest` before production release builds.
+
+
 

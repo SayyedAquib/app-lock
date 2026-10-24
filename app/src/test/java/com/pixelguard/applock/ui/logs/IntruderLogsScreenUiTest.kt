@@ -52,7 +52,7 @@ class IntruderLogsScreenUiTest {
 
         composeTestRule.onNodeWithText("Intruder Selfies").assertExists()
         composeTestRule.onNodeWithText("No Break-In Attempts").assertExists()
-        composeTestRule.onNodeWithText("When someone enters an incorrect PIN, their photo will appear here.").assertExists()
+        composeTestRule.onNodeWithText("When someone enters an incorrect passcode, their photo will appear here.").assertExists()
     }
 
     @Test

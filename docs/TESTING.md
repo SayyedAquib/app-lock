@@ -146,6 +146,20 @@ fun isNightLockdownActive_duringActiveNightHours_returnsTrue()
 - **90%+ Coverage**: `SessionManager` (grace periods, night lockdown windows).
 - **80%+ Coverage**: `MainViewModel` business logic and state flow combinations.
 
+## Test Performance & Execution Profiles
+To maintain an instant developer feedback loop, Pixel Guard provides two testing profiles:
+
+| Command | Profile | Scope | Typical Test Time |
+| :--- | :--- | :--- | :--- |
+| `.\gradlew.bat testFast` | **Fast Unit Mode** | Runs pure unit, domain, repository, and ViewModel tests (82 tests). Automatically excludes heavyweight Compose UI tests. | **~15s** (parallelized) |
+| `.\gradlew.bat testDebugUnitTest` | **Full Assurance Suite** | Runs all 143 unit and Robolectric Compose UI tests across all screens and dual themes. | **~44s** (parallelized) |
+| `.\gradlew.bat testDebugUnitTest --tests "ClassName"` | **Targeted Class** | Runs a single test class (e.g. `SessionManagerTest`). | **<3s** |
+
+### Execution Optimizations
+- **Multi-Core Test Parallelization**: Configured with `maxParallelForks = (availableProcessors / 2)` in `app/build.gradle.kts` to execute test suites concurrently.
+- **Worker Heap Sizing**: Forked test JVMs are sized with `-Xmx1024m` and `-XX:+UseParallelGC` to eliminate memory paging on 8GB host machines.
+- **Daemon Memory Tuning**: `gradle.properties` is configured with `org.gradle.jvmargs=-Xmx2048m` with `org.gradle.daemon=true` to prevent OS memory exhaustion.
+
 ## Required Checks
 Before marking any task complete or committing code:
 1. **Compilation Check**:
