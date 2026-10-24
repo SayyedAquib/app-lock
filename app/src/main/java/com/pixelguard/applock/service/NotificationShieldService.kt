@@ -108,7 +108,19 @@ class NotificationShieldService : NotificationListenerService() {
         packageName: String,
         preferences: LockPreferences
     ) {
-        val isUnlocked = SessionManager.isTemporarilyUnlocked(packageName, preferences.gracePeriodSeconds)
+        val isNight = SessionManager.isNightLockdownActive(
+            preferences.isScheduleEnabled,
+            preferences.scheduleStartHour,
+            preferences.scheduleEndHour
+        )
+        val effectiveGrace = SessionManager.getEffectiveGracePeriod(
+            packageName = packageName,
+            defaultGraceSeconds = preferences.gracePeriodSeconds,
+            isNightLockdown = isNight,
+            isPerAppGraceEnabled = preferences.isPerAppGraceEnabled,
+            appGracePeriodsJson = preferences.appGracePeriodsJson
+        )
+        val isUnlocked = SessionManager.isTemporarilyUnlocked(packageName, effectiveGrace)
         if (!isUnlocked) {
             // 1. Immediately cancel raw notification to prevent preview flash in status bar
             cancelNotification(sbn.key)

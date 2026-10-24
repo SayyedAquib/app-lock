@@ -69,29 +69,56 @@ class SessionManagerTest {
     }
 
     @Test
-    fun onScreenOff_clearsForegroundSession() {
+    fun onScreenOff_clearsAllSessionsImmediately_ignoringGracePeriods() {
         SessionManager.markAppUnlocked(testPackage)
-        assertEquals(testPackage, SessionManager.currentForegroundPackage)
+        SessionManager.markAppUnlocked(otherPackage)
+        assertEquals(otherPackage, SessionManager.currentForegroundPackage)
 
+        // Before screen off, both are unlocked
+        assertTrue(SessionManager.isTemporarilyUnlocked(testPackage, 300))
+        assertTrue(SessionManager.isTemporarilyUnlocked(otherPackage, 300))
+
+        // Screen turns off (power button pressed)
         SessionManager.onScreenOff()
         assertEquals(null, SessionManager.currentForegroundPackage)
-        // Instant relock requires unlock after screen off
-        assertFalse(SessionManager.isTemporarilyUnlocked(testPackage, 0))
+
+        // All sessions wiped immediately, ignoring remaining grace periods
+        assertFalse(SessionManager.isTemporarilyUnlocked(testPackage, 300))
+        assertFalse(SessionManager.isTemporarilyUnlocked(otherPackage, 300))
+        assertFalse(SessionManager.isTemporarilyUnlocked(testPackage, SessionManager.GRACE_UNTIL_SCREEN_OFF))
     }
 
     @Test
-    fun isTemporarilyUnlocked_immediateRelock_unlockedOnlyWhileInForeground() {
+    fun isTemporarilyUnlocked_immediateRelock_allows15SecondQuickSwitchBuffer() {
         val now = System.currentTimeMillis()
-        SessionManager.markAppUnlockedForTest(testPackage, now - 10_000L, inForeground = true) // 10s ago, past transition buffer
+        SessionManager.markAppUnlockedForTest(testPackage, now - 10_000L, inForeground = true)
 
         // Same app in foreground with immediate relock (0s grace)
         assertTrue(SessionManager.isTemporarilyUnlocked(testPackage, 0))
 
-        // Switch to another app
+        // Switch to another app 5s ago (within 15s quick-switch buffer)
         SessionManager.onAppSwitched(otherPackage, 0)
+        SessionManager.markAppExitedForTest(testPackage, now - 5_000L)
+        assertTrue(SessionManager.isTemporarilyUnlocked(testPackage, 0))
 
-        // Returning to original package must now require unlock
+        // Exited 20s ago (exceeds 15s quick-switch buffer)
+        SessionManager.markAppExitedForTest(testPackage, now - 20_000L)
         assertFalse(SessionManager.isTemporarilyUnlocked(testPackage, 0))
+    }
+
+    @Test
+    fun isTemporarilyUnlocked_untilScreenOff_remainsUnlockedWhileScreenOn() {
+        val now = System.currentTimeMillis()
+        // Unlocked 15 minutes ago, exited 10 minutes ago
+        SessionManager.markAppUnlockedForTest(testPackage, now - 900_000L, inForeground = false)
+        SessionManager.markAppExitedForTest(testPackage, now - 600_000L)
+
+        // While screen is on, GRACE_UNTIL_SCREEN_OFF stays unlocked!
+        assertTrue(SessionManager.isTemporarilyUnlocked(testPackage, SessionManager.GRACE_UNTIL_SCREEN_OFF))
+
+        // Screen turns off -> immediately locked!
+        SessionManager.onScreenOff()
+        assertFalse(SessionManager.isTemporarilyUnlocked(testPackage, SessionManager.GRACE_UNTIL_SCREEN_OFF))
     }
 
     @Test

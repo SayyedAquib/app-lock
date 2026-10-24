@@ -1417,7 +1417,8 @@ fun AppSecurityProfileSheetContent(
 
             val graceOptions = listOf(
                 -1 to Pair("Default", "Follows global frequency set in Settings"),
-                0 to Pair("Instant (0s)", "Maximum security: re-locks the instant you leave"),
+                0 to Pair("Instant (0s)", "Locks on exit with 15s quick-switch buffer; screen-off locks instantly"),
+                com.pixelguard.applock.domain.usecase.SessionManager.GRACE_UNTIL_SCREEN_OFF to Pair("Until Screen Off", "Stays unlocked while phone is in use; screen-off locks instantly"),
                 30 to Pair("30s", "Allows quick task-switching within 30 seconds"),
                 60 to Pair("1m", "Safe window for short multitasks"),
                 300 to Pair("5m", "Balanced for prolonged active sessions"),
@@ -2046,6 +2047,7 @@ fun AppListItem(
                 if (app.isLocked) {
                     val graceBadge = when (appGraceSeconds) {
                         null -> "Default"
+                        com.pixelguard.applock.domain.usecase.SessionManager.GRACE_UNTIL_SCREEN_OFF -> "Screen Off"
                         0 -> "0s"
                         30 -> "30s"
                         60 -> "1m"

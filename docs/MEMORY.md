@@ -277,6 +277,14 @@
      - **Dead Overlay Removal & 1-Permission Onboarding (PG-SEC-15)**: Removed `SYSTEM_ALERT_WINDOW` permission and deleted redundant `OverlayWindowManager.kt`/`OverlayLifecycleOwner.kt`. Onboarding now requires only 1 permission (`AccessibilityService`).
      - **Test & Build Verification**: All 142 automated unit and Compose UI tests passing with 0 failures (`BUILD SUCCESSFUL`). Production release build (`app-release.apk`) compiled.
 
+ 51. **Screen-Off Absolute Relock, "Until Screen Off" Frequency & 15s Quick-Switch Buffer (UX & Security Refinement)**:
+     - **Interactive /grill-me Alignment**: Resolved repetitive unlock prompt fatigue based on user feedback.
+     - **Screen-Off Hard Security Boundary**: Updated `SessionManager.onScreenOff()` to call `clearAllSessions()`, guaranteeing that turning off the screen or pressing the power button immediately wipes all unlocked sessions, strictly ignoring any remaining grace periods.
+     - **15-Second Quick-Switch Buffer for "Immediately" (0s)**: Added a 15-second multitasking window (`QUICK_SWITCH_BUFFER_SECONDS = 15`) to eliminate copy-paste friction when switching to Chrome or SMS to grab OTPs/2FA codes, while preserving instant screen-off locking.
+     - **"Until Screen Off" Lock Frequency (`GRACE_UNTIL_SCREEN_OFF = -2`)**: Surfaced in Global Settings (`GlobalGracePeriodSheetContent`) and Per-App (`AppSecurityProfileSheetContent`), allowing continuous access while the phone is in use until the screen turns off.
+     - **Accessibility Service & Notification Shield Polish**: Removed eager launcher evictions in `AppLockAccessibilityService.kt` to allow the quick-switch buffer to function smoothly, and aligned `NotificationShieldService` to use effective per-app grace period logic.
+     - **Unit Tests**: Updated `SessionManagerTest.kt` with comprehensive tests verifying the screen-off wipe, quick-switch buffer, and until-screen-off session lifecycle.
+
 ## Known Problems
 - None in active runtime. On Android 17, initial sideloading requires the user to tap "Allow restricted settings" in App Info for Accessibility Service toggle activation (interactive guidance provided in Onboarding).
 
@@ -311,6 +319,16 @@
 - Decided on Dual-Theme Architecture, Adaptive Semantic Tokens & Automated WCAG Contrast Verification (ADR 035).
 - Decided on Security & Privacy FAQ Card & Accessibility Service Description Improvement (ADR 036).
 - Decided on Custom App Categorization, User Tags, Intermediate AppFilterCriteria, and Permanent Ban on Calculator Launcher Disguises (ADR 037).
+- Decided on Absolute Screen-Off Relock, "Until Screen Off" Frequency & 15-Second Task-Switching Buffer (ADR 039).
+
+## Session 52 (2026-10-24)
+- **Problem**: Repetitive unlock prompts when switching between apps (e.g. copying OTPs, passwords, or links) while maintaining strict device security.
+- **Solution**:
+  1. Absolute Screen-Off Relock: `SessionManager.onScreenOff()` clears all sessions across all apps immediately.
+  2. "Until Screen Off" Frequency: Added `-2` (`GRACE_UNTIL_SCREEN_OFF`) to allow an app to remain unlocked until device screen turns off.
+  3. 15-Second Quick-Switch Buffer: "Immediately" (0s) allows a 15-second multitasking window to copy OTPs/links without re-locking.
+  4. Per-App Isolation preserved: Unlocking one app never unlocks another.
+  5. Updated `AppSecurityProfileSheetContent`, `GlobalGracePeriodSheetContent`, and unit tests. 100% test pass rate (143 unit tests).
 
 ## Next Steps
 - Per strict user mandate, calculator launcher disguises and fake calculation passcodes are permanently banned across all future development.

@@ -124,7 +124,7 @@ Standard 4dp/8dp grid system:
 ### Modals & Bottom Sheets
 - **`AppSecurityProfileSheetContent`**: Modal bottom sheet featuring:
   - Header with app icon, title, package name, and live Lock/Unlock toggle.
-  - Re-lock Timeout segmented `FilterChip` selector (`Default`, `Instant (0s)`, `30s`, `1m`, `5m`, `15m`).
+  - Re-lock Timeout segmented `FilterChip` selector (`Default`, `Instant (0s)`, `Until Screen Off`, `30s`, `1m`, `5m`, `15m`).
   - **Category & Tags Section**: Interactive category dropdown capsule allowing reclassification to any of the 5 categories (with a "Reset to Default" action), plus interactive custom tag chips with `(x)` remove buttons and a `+ Add Tag` AssistChip opening `AddTagToAppDialog`.
   - Advanced Protection toggles: "Require Master PIN Only (Bypass Biometrics)" and "Hide Notification Previews".
 - Modal bottom sheets always use `rememberModalBottomSheetState(skipPartiallyExpanded = true)`.

@@ -433,10 +433,12 @@ fun SettingsScreen(
                 )
 
                 val graceLabel = when (prefs.gracePeriodSeconds) {
-                    0 -> "Immediately upon leaving app or screen off"
+                    com.pixelguard.applock.domain.usecase.SessionManager.GRACE_UNTIL_SCREEN_OFF -> "Until screen turns off"
+                    0 -> "Immediately (with 15s quick switch)"
                     30 -> "30 seconds grace period"
                     60 -> "1 minute grace period"
                     300 -> "5 minutes grace period"
+                    900 -> "15 minutes grace period"
                     else -> "${prefs.gracePeriodSeconds} seconds"
                 }
 
@@ -809,10 +811,12 @@ fun GlobalGracePeriodSheetContent(
     onSelectGracePeriod: (Int) -> Unit
 ) {
     val options = listOf(
-        0 to Pair("Immediately", "Lock upon leaving app or turning off screen"),
+        0 to Pair("Immediately", "Locks on exit with 15s quick-switch buffer; screen-off locks instantly"),
+        com.pixelguard.applock.domain.usecase.SessionManager.GRACE_UNTIL_SCREEN_OFF to Pair("Until screen turns off", "Stays unlocked while phone is in use; screen-off locks instantly"),
         30 to Pair("30 seconds", "Short multitasking window before re-locking"),
         60 to Pair("1 minute", "Standard grace period for rapid app switching"),
-        300 to Pair("5 minutes", "Extended window for prolonged active sessions")
+        300 to Pair("5 minutes", "Extended window for prolonged active sessions"),
+        900 to Pair("15 minutes", "Maximum continuous access period")
     )
 
     Column(

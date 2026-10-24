@@ -196,9 +196,9 @@ class AppLockAccessibilityServiceTest {
     // --- 4. Launcher & Grace Period Switching Tests ---
 
     @Test
-    fun typeWindowStateChanged_launcher_immediateRelock_locksPreviousPackageAfterBuffer() {
+    fun typeWindowStateChanged_launcher_immediateRelock_keepsUnlockedWithinQuickSwitchBufferThenLocks() {
         val now = SessionManager.now()
-        SessionManager.markAppUnlockedForTest(bankPackage, now - 10_000L, inForeground = true)
+        SessionManager.markAppUnlockedForTest(bankPackage, now - 5_000L, inForeground = true)
         service.setLastPackageForTest(bankPackage)
 
         val event = AccessibilityEvent.obtain().apply {
@@ -208,9 +208,13 @@ class AppLockAccessibilityServiceTest {
         }
         service.onAccessibilityEvent(event)
 
-        // Previous package is locked immediately upon returning to launcher
-        assertThat(SessionManager.isTemporarilyUnlocked(bankPackage, 0)).isFalse()
+        // Within 15s quick-switch buffer, app remains unlocked for OTP/multitasking
+        assertThat(SessionManager.isTemporarilyUnlocked(bankPackage, 0)).isTrue()
         assertThat(SessionManager.currentForegroundPackage).isEqualTo(pixelLauncherPackage)
+
+        // After quick-switch buffer expires (16s after exit), app is locked
+        SessionManager.markAppExitedForTest(bankPackage, now - 16_000L)
+        assertThat(SessionManager.isTemporarilyUnlocked(bankPackage, 0)).isFalse()
     }
 
     @Test

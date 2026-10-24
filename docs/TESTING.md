@@ -16,7 +16,7 @@ Pixel Guard enforces a pragmatic, high-assurance testing strategy. Because it is
   - `io.mockk:mockk:1.13.13`: Kotlin-first mocking for Android platform components and context services.
 - **Device Hardware Testing**: Android Debug Bridge (ADB) via PowerShell on Google Pixel 9 (Android 17, 120Hz display).
 
-## Test Suite Structure (142 Total Tests, 100% Passing)
+## Test Suite Structure (143 Total Tests, 100% Passing)
 
 ### 1. Presentation & Compose UI Tests (54 tests)
 All UI tests run via Compose UI Rule + Robolectric on the JVM with exact Pixel 9 display metrics:
@@ -81,7 +81,7 @@ All UI tests run via Compose UI Rule + Robolectric on the JVM with exact Pixel 9
   - Photo preview modal dialog opening and closing.
   - Back navigation callback.
 
-### 2. Unit & Service Tests (88 tests)
+### 2. Unit & Service Tests (89 tests)
 Unit and service tests reside in `app/src/test/java/` and validate non-UI modules, cryptography, background event filtering, and business logic:
 - **`AppLockAccessibilityServiceTest`** (12 tests):
   - `TYPE_WINDOWS_CHANGED` gesture navigation handle immunity from Pixel Launcher (`com.google.android.apps.nexuslauncher`).
@@ -92,13 +92,13 @@ Unit and service tests reside in `app/src/test/java/` and validate non-UI module
   - Transient system share sheet (`com.android.intentresolver`) preserves active session.
   - Transient system photo picker (`com.google.android.providers.media.module`) preserves active session.
   - Transient Pixel Guard self-package (`com.pixelguard.applock`) preserves active session.
-  - Home launcher transition with 0s grace locks previous package after transition buffer.
+  - Home launcher transition with 0s grace keeps app unlocked within 15s quick-switch buffer, then locks after buffer expires.
   - Home launcher transition with 30s grace records exit time and keeps app unlocked within grace window.
   - Dynamic Settings protection (`isSettingsProtected == true`) launches `LockActivity`.
   - Dynamic Google Play Store protection (`isPlayStoreProtected == true`) launches `LockActivity`.
   - Dynamic `ACTION_SCREEN_OFF` broadcast receiver revokes foreground session immediately.
 - **`CryptoManagerTest`** (8 tests): PBKDF2/SHA-256 hashing, distinct salts, constant-time comparison, Keystore crypto operations.
-- **`SessionManagerTest`** (26 tests): Grace period math, Night Lockdown scheduling boundaries, per-app priority, flicker buffer protection, active foreground session retention during continuous in-app usage, exit-based grace countdown, and screen-off session revocation.
+- **`SessionManagerTest`** (27 tests): Grace period math, Night Lockdown scheduling boundaries, per-app priority, flicker buffer protection, active foreground session retention during continuous in-app usage, exit-based grace countdown, absolute screen-off all-session revocation, 15s quick-switch buffer, and "Until Screen Off" persistence.
 - **`LockPreferencesTest`** (13 tests): Default value invariants (`isSettingsProtected == false`, `isRecentsMaskingEnabled == false`, `isBiometricsEnabled == true`, etc.), `AppSortOrder` and `LockType` enum completeness, mutation copy isolation, JSON-based PIN-only and notification mask evaluations, category overrides parsing, custom user & app tag serialization, and `isCustomized()` policy checks.
 - **`MainViewModelTest`** (21 tests): Reactive state flow combining, dual search query matching (`appName` and `packageName`), category filtering and dynamic category override, custom tag lifecycle & batch actions, customized filter, sorting, batch actions, PIN configuration, grace period serialization.
 - **`DualThemeContrastTest`** (8 tests): Mathematical WCAG 2.1 AA/AAA contrast ratios and theme rendering across screens in Light and Dark modes.

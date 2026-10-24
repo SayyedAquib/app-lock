@@ -128,27 +128,6 @@ class AppLockAccessibilityService : AccessibilityService() {
         } else {
             // Switched to an unlocked user application, home launcher, or recents
             if (BuildConfig.DEBUG) Log.i(TAG, "Switched to package: $packageName")
-            if (isLauncherOrRecents(packageName)) {
-                lastPackage.let { prevPkg ->
-                    if (prevPkg.isNotEmpty() && (lockedPackages.contains(prevPkg) || isProtectedSystemPackage(prevPkg, preferences))) {
-                        val isNight = SessionManager.isNightLockdownActive(
-                            preferences.isScheduleEnabled,
-                            preferences.scheduleStartHour,
-                            preferences.scheduleEndHour
-                        )
-                        val effectiveGrace = SessionManager.getEffectiveGracePeriod(
-                            packageName = prevPkg,
-                            defaultGraceSeconds = preferences.gracePeriodSeconds,
-                            isNightLockdown = isNight,
-                            isPerAppGraceEnabled = preferences.isPerAppGraceEnabled,
-                            appGracePeriodsJson = preferences.appGracePeriodsJson
-                        )
-                        if (effectiveGrace <= 0 && !SessionManager.isRecentlyUnlocked(prevPkg, 3000L)) {
-                            SessionManager.lockPackage(prevPkg)
-                        }
-                    }
-                }
-            }
             SessionManager.onAppSwitched(packageName, preferences.gracePeriodSeconds)
         }
 

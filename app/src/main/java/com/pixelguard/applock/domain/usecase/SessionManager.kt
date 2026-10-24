@@ -12,6 +12,12 @@ object SessionManager {
     // Maps packageName -> exit timestamp (in milliseconds) when the user switched away
     private val exitTimestamps = ConcurrentHashMap<String, Long>()
 
+    // Special lock frequency value: stays unlocked while the screen remains ON
+    const val GRACE_UNTIL_SCREEN_OFF = -2
+
+    // Quick-switch multitasking buffer for "Immediately" mode (e.g. copying OTPs, links, 2FA codes)
+    const val QUICK_SWITCH_BUFFER_SECONDS = 15
+
     // Per-package failed attempt counters (persist across LockActivity recreations)
     private val failedAttempts = ConcurrentHashMap<String, Int>()
 
@@ -121,16 +127,23 @@ object SessionManager {
             return true
         }
 
-        // 3. User has navigated away from the app
-        if (effectiveGraceSeconds <= 0) {
-            // Immediate relock on exit
-            return false
+        // 3. Until Screen Off mode (-2): Stays unlocked as long as screen is on (onScreenOff wipes everything)
+        if (effectiveGraceSeconds == GRACE_UNTIL_SCREEN_OFF) {
+            return true
         }
 
-        // 4. Grace period counts down from when the user exited the app
+        // 4. "Immediately" mode (0s or negative other than -2):
+        // Allow a 15-second Quick-Switch buffer for copying OTPs/links without re-locking
+        val effectiveSeconds = if (effectiveGraceSeconds <= 0) QUICK_SWITCH_BUFFER_SECONDS else effectiveGraceSeconds
+
+        // 5. Grace period counts down from when the user exited the app
         val baseExitTime = exitTime ?: unlockTime
         val elapsedSinceExit = (nowTime - baseExitTime) / 1000
-        return elapsedSinceExit < effectiveGraceSeconds
+        val isUnlocked = elapsedSinceExit < effectiveSeconds
+        if (!isUnlocked) {
+            unlockedSessions.remove(packageName)
+        }
+        return isUnlocked
     }
 
     fun isRecentlyUnlocked(packageName: String, thresholdMs: Long = 3000L): Boolean {
@@ -193,10 +206,6 @@ object SessionManager {
                     val inTransition = isRecentlyUnlocked(prevPkg, 3000L) && isTransientLauncher(newPackageName)
                     if (!inTransition) {
                         exitTimestamps[prevPkg] = nowTime
-                        // Evict session immediately if 0s grace
-                        if (effectiveGraceSeconds <= 0) {
-                            unlockedSessions.remove(prevPkg)
-                        }
                     }
                 }
             }
@@ -204,13 +213,12 @@ object SessionManager {
         }
     }
 
+    /**
+     * Absolute Screen-Off Relock: The moment the power button is pressed or screen turns off,
+     * immediately wipe ALL unlocked sessions across all apps, completely ignoring any remaining grace periods.
+     */
     fun onScreenOff() {
-        val nowTime = now()
-        currentForegroundPackage?.let { fgPkg ->
-            exitTimestamps[fgPkg] = nowTime
-            unlockedSessions.remove(fgPkg)
-        }
-        currentForegroundPackage = null
+        clearAllSessions()
     }
 
     fun clearAllSessions() {

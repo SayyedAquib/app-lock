@@ -1262,4 +1262,34 @@ A complete defense-in-depth refactoring was mandated to eliminate all 15 vulnera
 - **Rock-Solid Stability**: Split-screen bypasses, camera driver hangs, and reboot lockout anomalies eliminated.
 - **100% Test Pass Rate**: All 142 unit and Robolectric tests passing with zero regressions.
 
+---
+
+## ADR 039: Absolute Screen-Off Relock, "Until Screen Off" Frequency & 15-Second Task-Switching Buffer
+### Date
+2026-10-24
+### Status
+Accepted
+### Context
+Users reported unlock fatigue when rapidly switching between apps (e.g. copying OTPs, 2FA codes, or web links), while simultaneously requiring guaranteed immediate locking the moment the device screen turns off or the power button is pressed. Previously, `SessionManager.onScreenOff()` only cleared the foreground app, allowing apps with active grace periods to remain unlocked when the screen turned back on. Furthermore, "Immediately" mode (0s) lacked a quick-switching buffer, forcing a full unlock even when navigating away for 1 second.
+### Options Considered
+1. Retain strict 0-second relock without quick-switch buffer. (Rejected: causes severe user friction when copying OTPs or 2FA codes).
+2. Global Unified Unlock (unlocking one app unlocks all apps). (Rejected by user in favor of Per-App unlock isolation).
+3. Absolute Screen-Off Relock with 15-Second Quick-Switch Buffer & "Until Screen Off" Option. (Adopted).
+### Decision
+1. **Absolute Screen-Off Security Boundary (`SessionManager.kt`)**:
+   - `onScreenOff()` calls `clearAllSessions()`, immediately wiping all active unlock sessions across all apps, completely ignoring any remaining grace periods.
+   - The second the power button is pressed or the screen times out, every single locked app is guaranteed to require authentication upon display wake.
+2. **"Until Screen Off" Lock Frequency Option (`GRACE_UNTIL_SCREEN_OFF = -2`)**:
+   - Added as a selectable frequency both Globally in Settings (`GlobalGracePeriodSheetContent`) and Per-App (`AppSecurityProfileSheetContent`).
+   - Keeps an unlocked app accessible for as long as the phone screen remains on without repetitive prompts.
+3. **15-Second Quick-Switch Buffer on "Immediately" Mode (`QUICK_SWITCH_BUFFER_SECONDS = 15`)**:
+   - When an app is set to "Immediately" (0s), users get a 15-second multitasking window to copy OTPs, passwords, or links without re-locking.
+   - Screen-off immediately voids this buffer and forces a relock.
+4. **Clean Interception in Accessibility Service (`AppLockAccessibilityService.kt`)**:
+   - Removed eager launcher-switch evictions that interfered with the 15-second quick-switch buffer and "Until Screen Off" sessions, delegating session lifecycle strictly to `SessionManager`.
+### Consequences
+- Resolves user frustration regarding repetitive unlock prompts while strictly maintaining phone-lock security boundaries.
+- 100% unit test coverage for screen-off clearing, quick-switch buffers, and "Until Screen Off" sessions.
+- Zero battery or performance overhead.
+
 
