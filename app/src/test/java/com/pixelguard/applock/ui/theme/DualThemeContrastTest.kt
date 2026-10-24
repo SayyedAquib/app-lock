@@ -204,7 +204,7 @@ class DualThemeContrastTest {
             }
         }
         composeTestRule.onNodeWithText("Setup Permissions").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Display Over Other Apps").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Accessibility Service").assertIsDisplayed()
     }
 
     @Test
@@ -218,7 +218,7 @@ class DualThemeContrastTest {
             }
         }
         composeTestRule.onNodeWithText("Setup Permissions").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Display Over Other Apps").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Accessibility Service").assertIsDisplayed()
     }
 }
 

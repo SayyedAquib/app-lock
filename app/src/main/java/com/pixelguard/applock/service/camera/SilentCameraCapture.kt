@@ -23,6 +23,7 @@ class SilentCameraCapture(private val context: Context) {
     private var imageReader: ImageReader? = null
     private var handlerThread: HandlerThread? = null
     private var backgroundHandler: Handler? = null
+    private var watchdogRunnable: Runnable? = null
 
     @SuppressLint("MissingPermission")
     fun captureIntruderPhoto(onPhotoCaptured: (File) -> Unit) {
@@ -34,6 +35,13 @@ class SilentCameraCapture(private val context: Context) {
         } ?: return
 
         startBackgroundThread()
+
+        val watchdog = Runnable {
+            Log.w(TAG, "Intruder photo capture timed out after 4000ms; forcing hardware cleanup")
+            cleanup()
+        }
+        watchdogRunnable = watchdog
+        backgroundHandler?.postDelayed(watchdog, 4000L)
 
         val intruderDir = File(context.filesDir, "intruders").apply {
             if (!exists()) mkdirs()
@@ -123,6 +131,8 @@ class SilentCameraCapture(private val context: Context) {
 
     private fun cleanup() {
         try {
+            watchdogRunnable?.let { backgroundHandler?.removeCallbacks(it) }
+            watchdogRunnable = null
             captureSession?.close()
             captureSession = null
             cameraDevice?.close()

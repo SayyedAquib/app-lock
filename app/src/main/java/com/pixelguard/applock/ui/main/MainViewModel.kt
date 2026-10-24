@@ -25,12 +25,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class PermissionStatus(
-    val hasOverlayPermission: Boolean,
+    val hasOverlayPermission: Boolean = false,
     val hasAccessibilityPermission: Boolean,
     val hasNotificationPermission: Boolean
 ) {
     val isAllGranted: Boolean
-        get() = hasOverlayPermission && hasAccessibilityPermission
+        get() = hasAccessibilityPermission
 }
 
 class MainViewModel(
@@ -228,6 +228,41 @@ class MainViewModel(
 
     suspend fun verifyPin(pin: String): Boolean {
         return repository.verifyPin(pin)
+    }
+
+    /**
+     * PG-SEC-01: Rate-limited PIN verification for administrative actions (e.g. Change Master PIN).
+     * Enforces progressive lockouts and triggers intruder photo capture upon exceeding failed threshold.
+     */
+    suspend fun verifyMasterPinForChange(currentPin: String): Boolean {
+        val appPkg = AppLockApplication.instance.packageName
+        if (com.pixelguard.applock.domain.usecase.SessionManager.isLockedOut(appPkg)) {
+            return false
+        }
+        val isCorrect = repository.verifyPin(currentPin)
+        if (isCorrect) {
+            com.pixelguard.applock.domain.usecase.SessionManager.resetFailedAttempts(appPkg)
+            return true
+        } else {
+            val attempts = com.pixelguard.applock.domain.usecase.SessionManager.incrementFailedAttempts(appPkg)
+            val currentPrefs = preferences.value
+            if (currentPrefs.isIntruderSelfieEnabled && attempts >= currentPrefs.failedAttemptsThreshold) {
+                val camera = com.pixelguard.applock.service.camera.SilentCameraCapture(AppLockApplication.instance)
+                camera.captureIntruderPhoto { photoFile ->
+                    viewModelScope.launch {
+                        val record = IntruderRecord(
+                            id = java.util.UUID.randomUUID().toString(),
+                            timestamp = System.currentTimeMillis(),
+                            targetPackageName = appPkg,
+                            targetAppName = "Pixel Guard Settings",
+                            photoPath = photoFile.absolutePath
+                        )
+                        repository.addIntruderRecord(record)
+                    }
+                }
+            }
+            return false
+        }
     }
 
     fun armRecommendedShields() {

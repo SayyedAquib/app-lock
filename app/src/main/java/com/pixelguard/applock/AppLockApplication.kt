@@ -31,12 +31,17 @@ class AppLockApplication : Application() {
         val appScope = CoroutineScope(Dispatchers.IO)
         appScope.launch {
             val attempts = dataStore.globalFailedAttemptsFlow.first()
-            val lockoutUntil = dataStore.globalLockoutUntilTimestampFlow.first()
-            com.pixelguard.applock.domain.usecase.SessionManager.syncPersistedLockout(attempts, lockoutUntil)
+            val wallClockExpiry = dataStore.globalLockoutWallClockTimestampFlow.first()
+            val durationMs = dataStore.globalLockoutDurationMsFlow.first()
+            com.pixelguard.applock.domain.usecase.SessionManager.syncPersistedLockout(
+                attempts = attempts,
+                wallClockExpiryMs = wallClockExpiry,
+                durationRemainingMs = durationMs
+            )
         }
-        com.pixelguard.applock.domain.usecase.SessionManager.onLockoutChanged = { attempts, untilMs ->
+        com.pixelguard.applock.domain.usecase.SessionManager.onLockoutChanged = { attempts, durationMs, wallClockExpiryMs ->
             appScope.launch {
-                dataStore.saveGlobalLockout(attempts, untilMs)
+                dataStore.saveGlobalLockout(attempts, durationMs, wallClockExpiryMs)
             }
         }
     }

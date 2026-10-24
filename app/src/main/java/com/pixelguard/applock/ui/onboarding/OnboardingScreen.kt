@@ -215,19 +215,7 @@ fun OnboardingScreen(
 
             var isNotificationSkipped by remember { mutableStateOf(false) }
 
-            // 1. Display Over Other Apps (Required)
-            PermissionCard(
-                title = "Display Over Other Apps",
-                description = "Enables drawing the lock screen over protected apps immediately.",
-                isRequired = true,
-                isGranted = permissionStatus.hasOverlayPermission,
-                icon = Icons.Default.Layers,
-                onGrant = { openOverlaySettings(context) }
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 2. Accessibility Service (Required)
+            // 1. Accessibility Service (Required)
             PermissionCard(
                 title = "Accessibility Service",
                 description = "Zero-latency real-time detection when you tap a locked application.",
@@ -396,24 +384,16 @@ fun OnboardingScreen(
             } else {
                 Spacer(modifier = Modifier.height(28.dp))
 
-                val missingRequiredCount = listOf(
-                    permissionStatus.hasOverlayPermission,
-                    permissionStatus.hasAccessibilityPermission
-                ).count { !it }
-
                 val buttonText = when {
                     permissionStatus.isAllGranted -> "Continue to App Lock"
-                    missingRequiredCount == 2 -> "Grant 2 Required Permissions"
-                    else -> "Grant 1 Remaining Permission"
+                    else -> "Grant Accessibility Permission"
                 }
 
                 Button(
                     onClick = {
                         if (permissionStatus.isAllGranted) {
                             onComplete()
-                        } else if (!permissionStatus.hasOverlayPermission) {
-                            openOverlaySettings(context)
-                        } else if (!permissionStatus.hasAccessibilityPermission) {
+                        } else {
                             openAccessibilitySettings(context)
                         }
                     },

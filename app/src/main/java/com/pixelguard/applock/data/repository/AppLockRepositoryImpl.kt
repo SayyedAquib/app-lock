@@ -80,15 +80,37 @@ class AppLockRepositoryImpl(
         val chars = newPin.toCharArray()
         val hash = cryptoManager.hashPin(chars, salt) // SEC-006: hashPin zeroes chars buffer
         val saltHex = salt.joinToString("") { "%02x".format(it) }
-        preferencesDataStore.savePin(hash, saltHex)
+        // PG-SEC-14: Hardware AES-GCM envelope encryption before storing at rest in DataStore
+        val encryptedHash = cryptoManager.encryptString(hash)
+        val encryptedSalt = cryptoManager.encryptString(saltHex)
+        preferencesDataStore.savePin(encryptedHash, encryptedSalt)
     }
 
     override suspend fun verifyPin(inputPin: String): Boolean {
-        val storedHash = preferencesDataStore.pinHashFlow.first()
-        val storedSaltHex = preferencesDataStore.pinSaltFlow.first()
-        if (storedHash == null || storedSaltHex == null) {
+        val rawStoredHash = preferencesDataStore.pinHashFlow.first()
+        val rawStoredSalt = preferencesDataStore.pinSaltFlow.first()
+        if (rawStoredHash == null || rawStoredSalt == null) {
             // No PIN has been configured yet — deny access until user sets one via Onboarding.
             return false
+        }
+        // Seamless automatic migration (PG-SEC-14): decrypt envelope or handle legacy plaintext
+        val storedHash = try {
+            cryptoManager.decryptString(rawStoredHash)
+        } catch (_: Exception) {
+            rawStoredHash
+        }
+        val storedSaltHex = try {
+            cryptoManager.decryptString(rawStoredSalt)
+        } catch (_: Exception) {
+            rawStoredSalt
+        }
+        // Transparently upgrade legacy plaintext to encrypted envelope if needed
+        if (!rawStoredHash.startsWith("enc:") || !rawStoredSalt.startsWith("enc:")) {
+            try {
+                val encHash = cryptoManager.encryptString(storedHash)
+                val encSalt = cryptoManager.encryptString(storedSaltHex)
+                preferencesDataStore.savePin(encHash, encSalt)
+            } catch (_: Exception) {}
         }
         val salt = storedSaltHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
         val chars = inputPin.toCharArray()

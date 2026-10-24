@@ -40,16 +40,32 @@ class PreferencesDataStore(private val context: Context) {
         preferences[KEY_GLOBAL_LOCKOUT_UNTIL_TIMESTAMP] ?: 0L
     }
 
-    suspend fun saveGlobalLockout(failedAttempts: Int, lockoutUntilTimestamp: Long) {
+    val globalLockoutWallClockTimestampFlow: Flow<Long> = context.dataStore.data.map { preferences ->
+        preferences[KEY_GLOBAL_LOCKOUT_WALL_CLOCK_TIMESTAMP] ?: 0L
+    }
+
+    val globalLockoutDurationMsFlow: Flow<Long> = context.dataStore.data.map { preferences ->
+        preferences[KEY_GLOBAL_LOCKOUT_DURATION_MS] ?: 0L
+    }
+
+    suspend fun saveGlobalLockout(failedAttempts: Int, durationMs: Long, wallClockExpiryMs: Long) {
         context.dataStore.edit { preferences ->
             preferences[KEY_GLOBAL_FAILED_ATTEMPTS] = failedAttempts
-            preferences[KEY_GLOBAL_LOCKOUT_UNTIL_TIMESTAMP] = lockoutUntilTimestamp
+            preferences[KEY_GLOBAL_LOCKOUT_DURATION_MS] = durationMs
+            preferences[KEY_GLOBAL_LOCKOUT_WALL_CLOCK_TIMESTAMP] = wallClockExpiryMs
+            preferences[KEY_GLOBAL_LOCKOUT_UNTIL_TIMESTAMP] = wallClockExpiryMs
         }
+    }
+
+    suspend fun saveGlobalLockout(failedAttempts: Int, lockoutUntilTimestamp: Long) {
+        saveGlobalLockout(failedAttempts, 0L, lockoutUntilTimestamp)
     }
 
     suspend fun clearGlobalLockout() {
         context.dataStore.edit { preferences ->
             preferences[KEY_GLOBAL_FAILED_ATTEMPTS] = 0
+            preferences[KEY_GLOBAL_LOCKOUT_DURATION_MS] = 0L
+            preferences[KEY_GLOBAL_LOCKOUT_WALL_CLOCK_TIMESTAMP] = 0L
             preferences[KEY_GLOBAL_LOCKOUT_UNTIL_TIMESTAMP] = 0L
         }
     }
@@ -192,5 +208,7 @@ class PreferencesDataStore(private val context: Context) {
         private val KEY_APP_CUSTOM_TAGS_JSON = stringPreferencesKey("app_custom_tags_json")
         private val KEY_GLOBAL_FAILED_ATTEMPTS = intPreferencesKey("global_failed_attempts")
         private val KEY_GLOBAL_LOCKOUT_UNTIL_TIMESTAMP = longPreferencesKey("global_lockout_until_timestamp")
+        private val KEY_GLOBAL_LOCKOUT_WALL_CLOCK_TIMESTAMP = longPreferencesKey("global_lockout_wall_clock_timestamp")
+        private val KEY_GLOBAL_LOCKOUT_DURATION_MS = longPreferencesKey("global_lockout_duration_ms")
     }
 }

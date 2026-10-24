@@ -227,19 +227,41 @@ object SessionManager {
         }
     }
 
-    // --- Failed Attempts & Rate Limiting API (SEC-103 Global Rate Limit & SEC-104 Persistence) ---
+    // --- Failed Attempts & Rate Limiting API (SEC-103 Global Rate Limit & PG-SEC-02 Reboot Epoch Sync) ---
 
     const val GLOBAL_PACKAGE = "__GLOBAL__"
 
-    var onLockoutChanged: ((attempts: Int, untilMs: Long) -> Unit)? = null
+    var onLockoutChanged: ((attempts: Int, durationRemainingMs: Long, wallClockExpiryMs: Long) -> Unit)? = null
 
-    fun syncPersistedLockout(attempts: Int, untilMs: Long) {
+    /**
+     * PG-SEC-02: Sync persisted lockout across device reboots safely using wall-clock expiration
+     * and duration sanity checks, eliminating monotonic epoch mismatch DoS.
+     */
+    fun syncPersistedLockout(
+        attempts: Int,
+        wallClockExpiryMs: Long,
+        durationRemainingMs: Long = 0L,
+        currentWallTime: Long = System.currentTimeMillis()
+    ) {
         if (attempts > 0) {
             failedAttempts[GLOBAL_PACKAGE] = attempts
         }
-        if (untilMs > now()) {
-            lockoutTimestamps[GLOBAL_PACKAGE] = untilMs
+        if (wallClockExpiryMs > currentWallTime) {
+            val remainingMs = wallClockExpiryMs - currentWallTime
+            // Sanity check: progressive lockout max is 5 minutes (300,000 ms).
+            // Guard against impossible future clock jumps or corrupted timestamps.
+            if (remainingMs in 1..300_000L) {
+                val effectiveDuration = if (durationRemainingMs in 1..remainingMs) durationRemainingMs else remainingMs
+                lockoutTimestamps[GLOBAL_PACKAGE] = now() + effectiveDuration
+            } else {
+                // Out of range / clock tampering detected: clear invalid lockout
+                onLockoutChanged?.invoke(attempts, 0L, 0L)
+            }
         }
+    }
+
+    fun syncPersistedLockout(attempts: Int, untilMs: Long) {
+        syncPersistedLockout(attempts, untilMs, 0L, System.currentTimeMillis())
     }
 
     fun incrementFailedAttempts(packageName: String): Int {
@@ -261,9 +283,10 @@ object SessionManager {
             val lockoutUntil = nowTime + penalty
             lockoutTimestamps[GLOBAL_PACKAGE] = lockoutUntil
             lockoutTimestamps[packageName] = lockoutUntil
-            onLockoutChanged?.invoke(globalCount, lockoutUntil)
+            val wallClockExpiry = System.currentTimeMillis() + penalty
+            onLockoutChanged?.invoke(globalCount, penalty, wallClockExpiry)
         } else {
-            onLockoutChanged?.invoke(globalCount, 0L)
+            onLockoutChanged?.invoke(globalCount, 0L, 0L)
         }
         return globalCount
     }
@@ -299,7 +322,7 @@ object SessionManager {
         failedAttempts.remove(GLOBAL_PACKAGE)
         lockoutTimestamps.remove(packageName)
         lockoutTimestamps.remove(GLOBAL_PACKAGE)
-        onLockoutChanged?.invoke(0, 0L)
+        onLockoutChanged?.invoke(0, 0L, 0L)
     }
 
     internal fun setLockoutForTest(packageName: String, durationMs: Long) {

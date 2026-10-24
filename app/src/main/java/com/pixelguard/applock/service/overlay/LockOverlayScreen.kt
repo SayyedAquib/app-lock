@@ -103,7 +103,8 @@ fun LockOverlayScreen(
     var currentLockout by remember { mutableStateOf(lockoutSecondsProvider()) }
     var attemptsUntilLockout by remember { mutableStateOf(attemptsUntilLockoutProvider()) }
     var isUnlocked by remember { mutableStateOf(false) }
-    val isKeypadDisabled = currentLockout > 0
+    var isVerifying by remember { mutableStateOf(false) }
+    val isKeypadDisabled = currentLockout > 0 || isVerifying || isUnlocked
     val shakeOffset = remember { Animatable(0f) }
     val dotErrorAnim = remember { Animatable(0f) }
     val dotFadeAnim = remember { Animatable(1f) }
@@ -572,7 +573,6 @@ fun LockOverlayScreen(
 
                                         IconButton(
                                             onClick = {
-                                                isUnlocked = true
                                                 hapticManager.tapClick(isHapticsEnabled)
                                                 onUnlockSuccess()
                                             },
@@ -673,10 +673,11 @@ fun LockOverlayScreen(
                                                     enabled = !isKeypadDisabled
                                                 ) {
                                                     hapticManager.keypadTick(isHapticsEnabled)
-                                                    if (pinInput.length < 4) {
+                                                    if (pinInput.length < 4 && !isVerifying) {
                                                         val updated = pinInput + item
                                                         pinInput = updated
                                                         if (updated.length == 4) {
+                                                            isVerifying = true
                                                             onPinSubmitted(updated)
                                                             scope.launch {
                                                                 kotlinx.coroutines.delay(120L)
@@ -700,6 +701,7 @@ fun LockOverlayScreen(
                                                                 pinInput = ""
                                                                 dotErrorAnim.snapTo(0f)
                                                                 dotFadeAnim.snapTo(1f)
+                                                                isVerifying = false
                                                             }
                                                         }
                                                     }

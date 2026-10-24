@@ -63,10 +63,10 @@ class OnboardingScreenUiTest {
         }
 
         composeTestRule.onNodeWithText("Setup Permissions").assertExists()
-        composeTestRule.onNodeWithText("Display Over Other Apps").assertExists()
+        composeTestRule.onNodeWithText("Display Over Other Apps").assertDoesNotExist()
         composeTestRule.onNodeWithText("Accessibility Service").assertExists()
         composeTestRule.onNodeWithText("Notification Privacy Shield").assertExists()
-        composeTestRule.onNodeWithText("Grant 2 Required Permissions").assertExists()
+        composeTestRule.onNodeWithText("Grant Accessibility Permission").assertExists()
     }
 
     @Test
@@ -248,10 +248,10 @@ class OnboardingScreenUiTest {
     }
 
     @Test
-    fun whenOneRequiredPermissionGranted_displaysGrant1RemainingPermission() {
+    fun whenAccessibilityPermissionNotGranted_displaysGrantAccessibilityPermission() {
         viewModel.setPermissionStatusForTest(
             PermissionStatus(
-                hasOverlayPermission = true,
+                hasOverlayPermission = false,
                 hasAccessibilityPermission = false,
                 hasNotificationPermission = false
             )
@@ -266,7 +266,7 @@ class OnboardingScreenUiTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Grant 1 Remaining Permission").assertExists()
+        composeTestRule.onNodeWithText("Grant Accessibility Permission").assertExists()
     }
 
     @Test
@@ -288,7 +288,7 @@ class OnboardingScreenUiTest {
             }
         }
 
-        val button = composeTestRule.onNodeWithText("Grant 2 Required Permissions")
+        val button = composeTestRule.onNodeWithText("Grant Accessibility Permission")
         button.assertExists()
         button.assertIsEnabled()
     }

@@ -597,7 +597,7 @@ fun SettingsScreen(
                     showChangePinSheet = false
                 },
                 onVerifyCurrentPin = { pin ->
-                    viewModel.verifyPin(pin)
+                    viewModel.verifyMasterPinForChange(pin)
                 }
             )
         }
@@ -771,7 +771,12 @@ fun ChangePinSheetContent(
                                 isCurrentPinVerified = true
                                 error = null
                             } else {
-                                error = "Current PIN is incorrect"
+                                val remainingLockout = com.pixelguard.applock.domain.usecase.SessionManager.getRemainingLockoutSeconds(com.pixelguard.applock.AppLockApplication.instance.packageName)
+                                error = if (remainingLockout > 0) {
+                                    "Too many failed attempts. Locked out for ${remainingLockout}s"
+                                } else {
+                                    "Current PIN is incorrect"
+                                }
                             }
                         }
                     },

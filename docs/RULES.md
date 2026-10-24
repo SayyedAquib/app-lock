@@ -33,13 +33,17 @@
 
 ## Database Rules
 - Store all user preferences in Jetpack DataStore; never use legacy `SharedPreferences`.
-- Never store plaintext PINs. Always generate a cryptographically random 16-byte salt and persist the stretched PBKDF2WithHmacSHA256 (200,000 iterations) hash.
+- Never store plaintext PINs or unencrypted hashes. Always generate a cryptographically random 16-byte salt, compute the stretched PBKDF2WithHmacSHA256 (200,000 iterations) hash, zero memory buffers with `fill(0)`, and envelope-encrypt both salt and hash via Titan M2 Keystore AES-256-GCM before writing to DataStore.
 - Never hardcode default fallback PIN strings; enforce explicit configuration via onboarding.
+- Persist global lockouts using wall-clock target timestamps and remaining duration, enforcing a 300-second sanity bound against clock-skew upon device reboot.
 
 ## Security Rules
 - Apply `FLAG_SECURE` to windows whenever `isRecentsMaskingEnabled` is active.
-- Save intruder photos strictly in internal sandboxed storage (`context.filesDir/intruders`). Never write intruder photos to `Environment.getExternalStorageDirectory()` or Android `MediaStore`.
+- Save intruder photos strictly in internal sandboxed storage (`context.filesDir/intruders`) encrypted with Titan M2 Keystore keys. Never write intruder photos to `Environment.getExternalStorageDirectory()` or Android `MediaStore`.
 - Do not expose any network permissions (`android.permission.INTERNET`) in `AndroidManifest.xml`.
+- Do not declare or request `SYSTEM_ALERT_WINDOW` permission. App locking is managed exclusively via hardware-accelerated `LockActivity` with `resizeableActivity="false"` and multi-window evasion prevention.
+- All credential changes (e.g. Master PIN updates in Settings) must be rate-limited through `SessionManager` and trigger intruder photo capture on repeated failures.
+- Front camera capture must include a 4000ms watchdog timer to prevent Camera2 service lockups.
 
 ## Dependency Rules
 - Declare all dependencies in `gradle/libs.versions.toml`.

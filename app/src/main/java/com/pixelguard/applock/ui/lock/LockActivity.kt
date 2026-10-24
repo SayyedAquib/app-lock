@@ -63,6 +63,12 @@ class LockActivity : FragmentActivity() {
             }
         }
 
+        // PG-SEC-04 Defense: Prevent split-screen / multi-window bypass
+        if (isInMultiWindowMode) {
+            goToHomeAndFinish()
+            return
+        }
+
         val packageManager = packageManager
         if (!isPauseAuthRequest) {
             appName = try {
@@ -273,6 +279,13 @@ class LockActivity : FragmentActivity() {
         recreate()
     }
 
+    override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean, newConfig: android.content.res.Configuration) {
+        super.onMultiWindowModeChanged(isInMultiWindowMode, newConfig)
+        if (isInMultiWindowMode) {
+            goToHomeAndFinish()
+        }
+    }
+
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         // If user leaves lock screen (e.g. swipes to Home/Recents), immediately wipe temporary session
@@ -282,7 +295,8 @@ class LockActivity : FragmentActivity() {
                 SessionManager.lockPackage(targetPackage)
             }
         }
-        finish()
+        // PG-SEC-05 Defense: Redirect to Home instead of popping the activity stack onto the locked app
+        goToHomeAndFinish()
     }
 
     private fun goToHomeAndFinish() {

@@ -8,7 +8,6 @@ import android.view.accessibility.AccessibilityEvent
 import com.pixelguard.applock.AppLockApplication
 import com.pixelguard.applock.BuildConfig
 import com.pixelguard.applock.domain.usecase.SessionManager
-import com.pixelguard.applock.service.overlay.OverlayWindowManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -16,7 +15,6 @@ import kotlinx.coroutines.launch
 
 class AppLockAccessibilityService : AccessibilityService() {
 
-    private lateinit var overlayWindowManager: OverlayWindowManager
     private val scope = CoroutineScope(Dispatchers.Main)
     private var lastPackage: String = ""
 
@@ -35,7 +33,6 @@ class AppLockAccessibilityService : AccessibilityService() {
 
     override fun onCreate() {
         super.onCreate()
-        overlayWindowManager = OverlayWindowManager(this)
 
         val repository = AppLockApplication.instance.repository
         scope.launch {
@@ -132,7 +129,6 @@ class AppLockAccessibilityService : AccessibilityService() {
             // Switched to an unlocked user application, home launcher, or recents
             if (BuildConfig.DEBUG) Log.i(TAG, "Switched to package: $packageName")
             if (isLauncherOrRecents(packageName)) {
-                overlayWindowManager.dismissOverlay()
                 lastPackage.let { prevPkg ->
                     if (prevPkg.isNotEmpty() && (lockedPackages.contains(prevPkg) || isProtectedSystemPackage(prevPkg, preferences))) {
                         val isNight = SessionManager.isNightLockdownActive(
@@ -173,8 +169,8 @@ class AppLockAccessibilityService : AccessibilityService() {
         // 1. Canonical System UI
         if (packageName == "com.android.systemui" || packageName == "com.google.android.systemui") return true
 
-        // 2. Exact known platform & framework provider packages (SEC-003: eliminates rogue substring matching bypasses)
-        if (KNOWN_SYSTEM_PACKAGES.contains(packageName) || packageName.startsWith("com.google.android.ext.")) return true
+        // 2. Exact known platform & framework provider packages (SEC-003 & PG-SEC-09: eliminates rogue prefix bypasses)
+        if (KNOWN_SYSTEM_PACKAGES.contains(packageName)) return true
 
         // 3. Dynamic verification for registered system Input Method Editors (keyboards)
         val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
@@ -201,9 +197,7 @@ class AppLockAccessibilityService : AccessibilityService() {
             null
         }
 
-        return packageName == defaultLauncher ||
-                packageName.contains("launcher", ignoreCase = true) ||
-                packageName.contains("recents", ignoreCase = true)
+        return packageName == defaultLauncher
     }
 
     private fun isCredentialOrBiometricPrompt(packageName: String, className: String): Boolean {
@@ -212,10 +206,17 @@ class AppLockAccessibilityService : AccessibilityService() {
                 packageName == "com.google.android.systemui"
         if (!isSystemProvider) return false
 
+        // PG-SEC-09: Explicitly deny settings management and biometric enrollment wizards
+        // from bypassing the lock screen when com.android.settings is locked.
+        if (className.contains("Enrollment", ignoreCase = true) ||
+            className.contains("Settings", ignoreCase = true) ||
+            className.contains("SubSettings", ignoreCase = true)) {
+            return false
+        }
+
+        // Only allow genuine system confirmation dialogs (e.g. ConfirmDeviceCredentialActivity)
         return className.contains("ConfirmDeviceCredential", ignoreCase = true) ||
-                className.contains("BiometricPrompt", ignoreCase = true) ||
-                className.contains("Fingerprint", ignoreCase = true) ||
-                className.contains("DeviceCredential", ignoreCase = true)
+                className.contains("BiometricPrompt", ignoreCase = true)
     }
 
     override fun onInterrupt() {
@@ -224,7 +225,6 @@ class AppLockAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         super.onDestroy()
-        overlayWindowManager.dismissOverlay()
         try {
             unregisterReceiver(screenOffReceiver)
         } catch (_: Exception) {}

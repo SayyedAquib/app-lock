@@ -254,6 +254,28 @@
      - **UI Polish (`MainScreen.kt`)**: Added pinned `Customized ($count)` FilterChip, dynamic user tag chips (`#$tag ($count)`), `+ Tag` AssistChip with `CreateTagDialog`, Contextual Tag Action Strip (`X of Y in #$tag`, `[Lock All]`, `[Unlock All]`, delete tag action), compact tag badges in `AppListItem`, and a dedicated "Category & Tags" section in `AppSecurityProfileSheetContent` (category selector capsule with "Reset to Default", tag chips with `AddTagToAppDialog`).
      - **Permanent Calculator Disguise Ban**: Formally banned proposing, suggesting, or implementing calculator launcher icons, fake math passcodes, or stealth cloaks per user mandate.
      - **Test Suite**: Expanded to **142 automated tests** (54 Compose UI + 88 Unit & Service), 100% passing.
+ 49. **Senior Security Engineer Complete Codebase Security Audit (OWASP Mobile 2024 & NIST SP 800-163)**:
+     - **Comprehensive Audit**: Conducted an exhaustive forensic security review across all Kotlin sources, Compose components, Android system services, crypto providers, and manifests.
+     - **Vulnerability Matrix**: Identified and classified 15 vulnerabilities and implementation flaws across OWASP Mobile Top 10 (2024), CVSS v3.1, and CWE categories, including critical privilege escalation in the Settings PIN change flow, monotonic boot uptime epoch mismatch DoS in SessionManager, Keystore master key overwrite race conditions, and multi-window split-screen authentication bypasses.
+     - **Artifact Generated**: Authored in-depth technical report artifact `pixel_guard_security_audit_report.md` detailing root causes, attack vectors, and concrete architectural remediation patches.
+
+ 50. **Full-Spectrum Zero-Trust Security Hardening & OWASP Top 10 Remediation (15/15 Findings Fixed)**:
+     - **Settings PIN Rate Limiting (PG-SEC-01)**: Replaced direct unmetered repository calls in `SettingsScreen` with `MainViewModel.verifyMasterPinForChange()`. Enforced progressive lockouts (5 failed = 30s, 8+ = 60s) and silent intruder selfie capture.
+     - **Epoch-Safe Wall-Clock Lockout (PG-SEC-02)**: Replaced `SystemClock.elapsedRealtime()` reboot persistence with wall-clock epoch timestamps (`global_lockout_wall_clock_timestamp`, `global_lockout_duration_ms`). Added 5-minute sanity bounds against clock rollback upon device boot.
+     - **BootReceiver Asynchronous Lifecycle (PG-SEC-03)**: Wrapped `BootReceiver.onReceive()` coroutine in `goAsync()`, preventing OS process termination during boot lockout sync.
+     - **Multi-Window & Split-Screen Immunity (PG-SEC-04)**: Set `android:resizeableActivity="false"` on `LockActivity`, added `isInMultiWindowMode` checks in `onCreate()` and `onMultiWindowModeChanged()`, and refactored `onUserLeaveHint()` to redirect immediately to Home.
+     - **CryptoManager Mutex Concurrency (PG-SEC-05)**: Guarded `getOrCreateKey()` with coroutine `Mutex`, preventing race conditions during concurrent key generation.
+     - **Camera2 Hardware Watchdog (PG-SEC-06)**: Added 4000ms watchdog timer in `SilentCameraCapture.kt` to force-release hardware if front camera hangs.
+     - **In-Memory Key Material Hygiene (PG-SEC-07)**: Zeroed derived PBKDF2 byte array with `hash.fill(0)` immediately after hex conversion.
+     - **Decryption Buffer Bounds Validation (PG-SEC-08)**: Enforced strict minimum length check (28 bytes for IV + GCM tag) in `decryptFromFileBytes()`, preventing out-of-bounds slicing.
+     - **Tightened Package Event Filters (PG-SEC-09)**: Removed loose `com.google.android.ext.` prefix check in `AppLockAccessibilityService.kt`.
+     - **Notification Shield Latency & Call Exemption (PG-SEC-10)**: Cached locked packages and preferences in memory; added `if (sbn.isOngoing) return` to exempt active phone calls, alarms, and timers.
+     - **Keypad Hammering State Gate (PG-SEC-11)**: Added `isVerifying` state gate in `LockOverlayScreen.kt` preventing concurrent keypad inputs during hash verification.
+     - **Biometric Button State Gate (PG-SEC-12)**: Removed premature `isUnlocked = true` on tapping fingerprint button; unlock state only updates on cryptographic biometric callback.
+     - **Settings Sub-Component Hardening (PG-SEC-13)**: Restricted `isCredentialOrBiometricPrompt()` to strict system credential dialogs, preventing Settings security screens from bypassing lock.
+     - **Hardware AES-GCM Envelope Encryption (PG-SEC-14)**: Envelope-encrypted Master PIN hash and salt in `AppLockRepositoryImpl` with Titan M2 / AndroidKeyStore AES-256-GCM before writing to DataStore, with automatic backwards-compatible migration.
+     - **Dead Overlay Removal & 1-Permission Onboarding (PG-SEC-15)**: Removed `SYSTEM_ALERT_WINDOW` permission and deleted redundant `OverlayWindowManager.kt`/`OverlayLifecycleOwner.kt`. Onboarding now requires only 1 permission (`AccessibilityService`).
+     - **Test & Build Verification**: All 142 automated unit and Compose UI tests passing with 0 failures (`BUILD SUCCESSFUL`). Production release build (`app-release.apk`) compiled.
 
 ## Known Problems
 - None in active runtime. On Android 17, initial sideloading requires the user to tap "Allow restricted settings" in App Info for Accessibility Service toggle activation (interactive guidance provided in Onboarding).
