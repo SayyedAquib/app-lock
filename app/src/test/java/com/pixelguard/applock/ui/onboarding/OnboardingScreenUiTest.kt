@@ -62,11 +62,11 @@ class OnboardingScreenUiTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Welcome to Pixel Guard").assertExists()
+        composeTestRule.onNodeWithText("Setup Permissions").assertExists()
         composeTestRule.onNodeWithText("Display Over Other Apps").assertDoesNotExist()
-        composeTestRule.onNodeWithText("App Detection").assertExists()
-        composeTestRule.onNodeWithText("Hide Notification Details").assertExists()
-        composeTestRule.onNodeWithText("Turn On App Detection").assertExists()
+        composeTestRule.onNodeWithText("Accessibility Service").assertExists()
+        composeTestRule.onNodeWithText("Notification Privacy Shield").assertExists()
+        composeTestRule.onNodeWithText("Grant Accessibility Permission").assertExists()
     }
 
     @Test
@@ -89,10 +89,10 @@ class OnboardingScreenUiTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Step 2: Create Passcode").assertExists()
-        composeTestRule.onNodeWithText("Enter 4-Digit Passcode").assertExists()
-        composeTestRule.onNodeWithText("Confirm 4-Digit Passcode").assertExists()
-        composeTestRule.onNodeWithText("Save Passcode & Finish").assertExists()
+        composeTestRule.onNodeWithText("Step 2: Create Master PIN").assertExists()
+        composeTestRule.onNodeWithText("Enter 4-Digit PIN").assertExists()
+        composeTestRule.onNodeWithText("Confirm 4-Digit PIN").assertExists()
+        composeTestRule.onNodeWithText("Set Master PIN & Finish Setup").assertExists()
     }
 
     @Test
@@ -115,20 +115,20 @@ class OnboardingScreenUiTest {
             }
         }
 
-        val submitButton = composeTestRule.onNodeWithText("Save Passcode & Finish")
+        val submitButton = composeTestRule.onNodeWithText("Set Master PIN & Finish Setup")
         submitButton.assertExists()
         submitButton.assertIsNotEnabled()
 
         // Type only 2 digits in first field
-        composeTestRule.onNodeWithText("Enter 4-Digit Passcode").performScrollTo().performTextInput("12")
+        composeTestRule.onNodeWithText("Enter 4-Digit PIN").performScrollTo().performTextInput("12")
         submitButton.assertIsNotEnabled()
 
         // Complete first field with 4 digits, but confirm is empty
-        composeTestRule.onNodeWithText("Enter 4-Digit Passcode").performScrollTo().performTextInput("34")
+        composeTestRule.onNodeWithText("Enter 4-Digit PIN").performScrollTo().performTextInput("34")
         submitButton.assertIsNotEnabled()
 
         // Type 4 digits in confirm
-        composeTestRule.onNodeWithText("Confirm 4-Digit Passcode").performScrollTo().performTextInput("1234")
+        composeTestRule.onNodeWithText("Confirm 4-Digit PIN").performScrollTo().performTextInput("1234")
         submitButton.assertIsEnabled()
     }
 
@@ -152,12 +152,12 @@ class OnboardingScreenUiTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Enter 4-Digit Passcode").performScrollTo().performTextInput("1234")
-        composeTestRule.onNodeWithText("Confirm 4-Digit Passcode").performScrollTo().performTextInput("5678")
+        composeTestRule.onNodeWithText("Enter 4-Digit PIN").performScrollTo().performTextInput("1234")
+        composeTestRule.onNodeWithText("Confirm 4-Digit PIN").performScrollTo().performTextInput("5678")
 
-        composeTestRule.onNodeWithText("Save Passcode & Finish").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Set Master PIN & Finish Setup").performScrollTo().performClick()
 
-        composeTestRule.onNodeWithText("Passcodes do not match").assertExists()
+        composeTestRule.onNodeWithText("PINs do not match").assertExists()
         assertThat(fakeRepository.storedPin).isNull()
     }
 
@@ -182,10 +182,10 @@ class OnboardingScreenUiTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Enter 4-Digit Passcode").performScrollTo().performTextInput("8942")
-        composeTestRule.onNodeWithText("Confirm 4-Digit Passcode").performScrollTo().performTextInput("8942")
+        composeTestRule.onNodeWithText("Enter 4-Digit PIN").performScrollTo().performTextInput("8942")
+        composeTestRule.onNodeWithText("Confirm 4-Digit PIN").performScrollTo().performTextInput("8942")
 
-        composeTestRule.onNodeWithText("Save Passcode & Finish").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Set Master PIN & Finish Setup").performScrollTo().performClick()
         mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
 
         assertThat(fakeRepository.storedPin).isEqualTo("8942")
@@ -241,7 +241,7 @@ class OnboardingScreenUiTest {
             }
         }
 
-        val continueBtn = composeTestRule.onNodeWithText("Get Started")
+        val continueBtn = composeTestRule.onNodeWithText("Continue to App Lock")
         continueBtn.assertExists()
         continueBtn.performClick()
         assertThat(onCompleteCalled).isTrue()
@@ -266,7 +266,7 @@ class OnboardingScreenUiTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Turn On App Detection").assertExists()
+        composeTestRule.onNodeWithText("Grant Accessibility Permission").assertExists()
     }
 
     @Test
@@ -288,7 +288,7 @@ class OnboardingScreenUiTest {
             }
         }
 
-        val button = composeTestRule.onNodeWithText("Turn On App Detection")
+        val button = composeTestRule.onNodeWithText("Grant Accessibility Permission")
         button.assertExists()
         button.assertIsEnabled()
     }
